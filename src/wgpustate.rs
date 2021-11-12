@@ -6,6 +6,8 @@ use crate::modelbuffers::Model;
 use crate::renderobj::RenderObject;
 use crate::texture;
 use crate::transform2d::Transform2D;
+use crate::texturerenderer::TextureRenderer;
+use crate::bindgroupreg::BindGroupReg;
 
 
 pub struct State {
@@ -19,6 +21,13 @@ pub struct State {
     pub uniform_buffers: Vec<wgpu::Buffer>,
     pub bind_groups: Vec<wgpu::BindGroup>,
     pub textures: Vec<texture::Texture>,
+
+    /// Renderers that have complete control over the renderpass to a texture.
+    pub texture_renderers: Vec<TextureRenderer>,
+
+    pub bindgroup_reg: Vec<BindGroupReg>,
+
+    /// Objects that will render passively.
     pub objects: Vec<RenderObject>,
 }
 
@@ -224,6 +233,8 @@ impl State {
             uniform_buffers: vec![],
             bind_groups: vec![main_panel_bind_group],
             textures: vec![diffuse_texture],
+            texture_renderers: vec![],
+            bindgroup_reg: vec![],
             objects: vec![]
         }
 
@@ -273,12 +284,44 @@ impl State {
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let output = self.surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor{
             label: None
         });
 
+        // TEXTURE RENDERER RENDERPASSING
+        for tex_rend in &self.texture_renderers {
+            let view = self.textures[tex_rend.texture].texture.create_view(&wgpu::TextureViewDescriptor::default());
+            {
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor{
+                    label: None,
+                    color_attachments: &[
+                        wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: 0.1,
+                                    g: 0.2,
+                                    b: 0.3,
+                                    a: 1.0
+                                }),
+                                store: true,
+                            }
+                        }
+                    ],
+                    depth_stencil_attachment: None
+                });
+
+                let rpref = &mut render_pass;
+                tex_rend.render(&self, rpref);
+                drop(rpref);
+            }
+        }
+
+
+        // SURFACE TEXTURE RENDERPASSING
+        let output = self.surface.get_current_texture()?;
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor{
                 label: None,
@@ -300,6 +343,7 @@ impl State {
                 depth_stencil_attachment: None
             });
 
+
             for obj in &self.objects {
                 let my_model = &self.models[obj.model];
 
@@ -310,7 +354,9 @@ impl State {
                 render_pass.draw_indexed(0..my_model.num_indices, 0, 0..1);
 
             }
+
         }
+
 
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();

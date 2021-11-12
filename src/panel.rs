@@ -1,12 +1,14 @@
 use crate::rect::*;
-use crate::renderobj::RenderObject;
+use crate::renderobj::{RenderObject, RenderState};
 use crate::transform2d::Transform2D;
 use crate::wgpustate::State;
 
 
+/// The logical side of the Panel, containing position data and rendering state.
+/// * Note: a Panel's RenderState/Object is only it's Panel canvas texture.
 struct Panel {
     world_rect: WorldRectangle,
-    wgpu_state_obj: usize,
+    render_state: RenderState,
 }
 
 impl Panel {
@@ -19,7 +21,8 @@ impl Panel {
             position: Transform2D::new(0.0,0.0,0.0),
             pipeline: 0,
             bind_group: 0,
-            model: 0
+            model: 0,
+            uniforms: vec![]
         });
 
         Self {
@@ -28,7 +31,7 @@ impl Panel {
                 width: 0.0,
                 height: 0.0
             },
-            wgpu_state_obj: objid
+            render_state: RenderState::Rendering(objid)
         }
 
     }

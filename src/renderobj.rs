@@ -1,6 +1,8 @@
 use crate::rect::WorldPoint;
 use crate::transform2d::Transform2D;
 use crate::wgpustate::State;
+use crate::modelbuffers::Model;
+use wgpu::Buffer;
 
 pub struct Position {
     x: f32,
@@ -14,11 +16,49 @@ impl Position {
     }
 }
 
+/// Acts as an interface between the application's data and the rendering object.
+/// Provides access to the WGPU state data associated with a RenderObject, and to interact with the master State.
+pub enum RenderState {
+    /// The pointer is currently stored in the master State's objects array for rendering.
+    Rendering(usize),
+
+    /// The object's pointer is stored here and is not actively rendering.
+    NotRendering(Box<RenderObject>)
+}
+
+impl RenderState {
+    // /// Access the RenderObject's data, write to it's buffers, etc.
+    // pub fn edit_uniforms<'a>(
+    //     &self,
+    //     state: &'a mut State,
+    //     f: Box<Fn(
+    //         Vec<&'a mut wgpu::Buffer>
+    //     ) -> ()>
+    // ) {
+    //     let mut unifs: Vec<&'a mut wgpu::Buffer> = vec![];
+    //     match self {
+    //         RenderState::Rendering(roid) => {
+    //             // let ro = state.objects.get(roid).unwrap()
+    //             // for i in 0..ro.uniforms.len() {
+    //             //     unifs.push(state.uniform_buffers.get_mut(i).unwrap())
+    //             // }
+    //         }
+    //         RenderState::NotRendering(ro) => {
+    //             for i in 0..ro.uniforms.len() {
+    //                 unifs.push(state.uniform_buffers.get_mut(i).unwrap())
+    //             }
+    //         }
+    //     }
+    //
+    // }
+}
+
 pub struct RenderObject {
     pub(crate) position: Transform2D,
     pub(crate) pipeline: usize,
     pub(crate) bind_group: usize,
     pub(crate) model: usize,
+    pub(crate) uniforms: Vec<usize>
 }
 
 impl RenderObject {
