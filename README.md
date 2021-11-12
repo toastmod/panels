@@ -1,4 +1,4 @@
-# panels
+# Panels
 WGPU based user interface for my personal use.  
 
 # The idea
