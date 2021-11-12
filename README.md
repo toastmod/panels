@@ -7,4 +7,4 @@ Window events can be filtered into the currently focused panel, allowing applets
 I also want this to be my startup code for projects that use WGPU.
 
 # Credit
-My code is based off of the [Learn WGPU tutorial.](https://sotrh.github.io/learn-wgpu/)
+My code is based on the [Learn WGPU tutorial.](https://sotrh.github.io/learn-wgpu/)
