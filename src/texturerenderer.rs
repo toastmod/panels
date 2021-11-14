@@ -17,6 +17,7 @@ pub enum TextureIndex {
 /// The bridge between Textures and program functionality.
 pub struct TextureRenderer {
     pub texture: TextureIndex,
+    pub texture_view: Option<wgpu::TextureView>,
     pub clear_or_load: wgpu::LoadOp<wgpu::Color>,
     pub this_object: RenderObject,
     /// Other `TextureRenderer`s representing subprograms.
@@ -57,6 +58,7 @@ impl TextureRenderer {
 
         Self {
             texture: tex_index,
+            texture_view: None,
             clear_or_load: wgpu::LoadOp::Load,
             this_object,
             owned_elements: vec![],
@@ -89,6 +91,7 @@ impl TextureRenderer {
     //     self.program_hook.input(self, state, event)
     // }
 
+    /// Retrieves the `TextureView` corresponding to this renderer.
     pub fn get_textureview(&self, state: &mut State) -> Result<wgpu::TextureView, wgpu::SurfaceError> {
         match self.texture {
             TextureIndex::Surface => {
@@ -98,6 +101,11 @@ impl TextureRenderer {
                 Ok(state.textures[i].texture.create_view(&wgpu::TextureViewDescriptor::default()))
             }
         }
+    }
+
+    /// Attempts to load the `TextureView` into this renderer's memory.
+    pub fn load_textureview(&mut self, state: &mut State) {
+        self.texture_view = Some(self.get_textureview(state).unwrap());
     }
 
     /// Set the `CallStatus` directly.

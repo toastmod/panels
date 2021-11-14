@@ -74,6 +74,8 @@ pub fn create_program_and_renderer((state, renderers, programs): ApplicationMut)
     programs[program_id].hook_renderer(renderer_id);
     renderers[renderer_id].hook_program(program_id);
 
+    programs[program_id].init(&mut renderers[renderer_id], state);
+
 }
 
 pub fn start() {

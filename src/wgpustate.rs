@@ -8,7 +8,7 @@ use crate::texturerenderer::{TextureIndex, TextureRenderer};
 use crate::timing::{CallStatus, Timing,};
 use crate::transform2d::Transform2D;
 use image::GenericImageView;
-use wgpu::SurfaceTexture;
+use wgpu::{SurfaceTexture, TextureView};
 use wgpu::util::DeviceExt;
 use winit::{event::*, window::*};
 use crate::programhook::ProgramHook;
@@ -385,7 +385,8 @@ impl State {
 
             // render if i should
             if i_should_render {
-                // call this texture's ProgramHook rendercall, get the new status
+
+                // call this renderer's ProgramHook rendercall, get the new status
                 programs[tex_rend.program_id.unwrap().clone()].render(tex_rend, self, &mut encoder);
                 tex_rend.drawf_status = CallStatus::JustCalled(Instant::now());
 

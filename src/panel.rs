@@ -33,6 +33,10 @@ impl Panel {
 }
 
 impl ProgramHook for Panel {
+    fn init(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
+        renderer.set_draw_status(CallStatus::Awaiting(Timing::ASAP))
+    }
+    
     fn hook_renderer(&mut self, renderer_id: usize) {
         self.renderer_id = renderer_id;
     }
@@ -43,12 +47,20 @@ impl ProgramHook for Panel {
         _state: &mut State,
         encoder: &mut wgpu::CommandEncoder,
     ) {
+
+        // check if this renderer has a `TextureView` loaded
+        if match &renderer.texture_view {
+            None => true,
+            Some(_) => false
+        } {
+            renderer.load_textureview(_state);
+        }
+
         // create renderpass
-        let view = renderer.get_textureview(_state).unwrap();
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: &view,
+                view: &renderer.texture_view.as_ref().unwrap(),
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {

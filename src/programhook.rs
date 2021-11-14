@@ -1,12 +1,19 @@
 use winit::event::WindowEvent;
 use crate::texturerenderer::TextureRenderer;
-use crate::timing::CallStatus;
+use crate::timing::{CallStatus, Timing};
 use crate::wgpustate::State;
 
 
 
 /// A struct that represents an applet that can be rendered to a texture.
 pub trait ProgramHook {
+
+    /// Initialize the program,
+    /// this is where you would set the inital `Timing` for the update and render functions.
+    /// This will be called when it has been loaded into memory and hooked to a `TextureRenderer`.
+    fn init(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
+        panic!("Can't initialize empty ProgramHook!")
+    }
 
     /// Sets the renderer hook/ID for this program.
     fn hook_renderer(&mut self, renderer_id: usize) {
