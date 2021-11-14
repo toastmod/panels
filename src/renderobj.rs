@@ -15,44 +15,45 @@ impl Position {
         Self { x,y,z }
     }
 }
+//
+// /// Acts as an interface between the application's data and the rendering object.
+// /// Provides access to the WGPU state data associated with a RenderObject, and to interact with the master State.
+// pub enum RenderState {
+//     /// The pointer is currently stored in the master State's objects array for rendering.
+//     Rendering(usize),
+//
+//     /// The object's pointer is stored here and is not actively rendering.
+//     NotRendering(Box<RenderObject>)
+// }
 
-/// Acts as an interface between the application's data and the rendering object.
-/// Provides access to the WGPU state data associated with a RenderObject, and to interact with the master State.
-pub enum RenderState {
-    /// The pointer is currently stored in the master State's objects array for rendering.
-    Rendering(usize),
+// impl RenderState {
+//     // /// Access the RenderObject's data, write to it's buffers, etc.
+//     // pub fn edit_uniforms<'a>(
+//     //     &self,
+//     //     state: &'a mut State,
+//     //     f: Box<Fn(
+//     //         Vec<&'a mut wgpu::Buffer>
+//     //     ) -> ()>
+//     // ) {
+//     //     let mut unifs: Vec<&'a mut wgpu::Buffer> = vec![];
+//     //     match self {
+//     //         RenderState::Rendering(roid) => {
+//     //             // let ro = state.objects.get(roid).unwrap()
+//     //             // for i in 0..ro.uniforms.len() {
+//     //             //     unifs.push(state.uniform_buffers.get_mut(i).unwrap())
+//     //             // }
+//     //         }
+//     //         RenderState::NotRendering(ro) => {
+//     //             for i in 0..ro.uniforms.len() {
+//     //                 unifs.push(state.uniform_buffers.get_mut(i).unwrap())
+//     //             }
+//     //         }
+//     //     }
+//     //
+//     // }
+// }
 
-    /// The object's pointer is stored here and is not actively rendering.
-    NotRendering(Box<RenderObject>)
-}
-
-impl RenderState {
-    // /// Access the RenderObject's data, write to it's buffers, etc.
-    // pub fn edit_uniforms<'a>(
-    //     &self,
-    //     state: &'a mut State,
-    //     f: Box<Fn(
-    //         Vec<&'a mut wgpu::Buffer>
-    //     ) -> ()>
-    // ) {
-    //     let mut unifs: Vec<&'a mut wgpu::Buffer> = vec![];
-    //     match self {
-    //         RenderState::Rendering(roid) => {
-    //             // let ro = state.objects.get(roid).unwrap()
-    //             // for i in 0..ro.uniforms.len() {
-    //             //     unifs.push(state.uniform_buffers.get_mut(i).unwrap())
-    //             // }
-    //         }
-    //         RenderState::NotRendering(ro) => {
-    //             for i in 0..ro.uniforms.len() {
-    //                 unifs.push(state.uniform_buffers.get_mut(i).unwrap())
-    //             }
-    //         }
-    //     }
-    //
-    // }
-}
-
+/// Data for a renderable object.
 pub struct RenderObject {
     pub(crate) position: Transform2D,
     pub(crate) pipeline: usize,
@@ -62,6 +63,23 @@ pub struct RenderObject {
 }
 
 impl RenderObject {
+
+    pub fn new(state: &mut State) -> Self {
+        // create/choose pipeline
+        // create/choose bindgroup
+        // create/choose model
+        // create uniforms
+
+        Self {
+            position: Transform2D::new(0.0,0.0,0.0),
+            pipeline: 0,
+            bind_group: 0,
+            model: 0,
+            uniforms: vec![]
+        }
+        
+    }
+
     // pub fn render<'a>(&self, state: &'a State, render_pass: &'a mut wgpu::RenderPass<'a>) {
     //
     //     let my_model = &state.models[self.model];
