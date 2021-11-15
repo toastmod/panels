@@ -41,39 +41,12 @@ impl ProgramHook for Panel {
         self.renderer_id = renderer_id;
     }
 
-    fn render(
+    fn render<'a>(
         &self,
         renderer: &mut TextureRenderer,
-        _state: &mut State,
-        encoder: &mut wgpu::CommandEncoder,
+        _state: &'a mut State,
+        render_pass: &mut wgpu::RenderPass<'a>
     ) {
-
-        // check if this renderer has a `TextureView` loaded
-        if match &renderer.texture_view {
-            None => true,
-            Some(_) => false
-        } {
-            renderer.load_textureview(_state);
-        }
-
-        // create renderpass
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
-            color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: &renderer.texture_view.as_ref().unwrap(),
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.1,
-                        g: 0.2,
-                        b: 0.3,
-                        a: 1.0,
-                    }),
-                    store: true,
-                },
-            }],
-            depth_stencil_attachment: None,
-        });
 
         let obj = &renderer.this_object;
         let my_model = &_state.models[obj.model];

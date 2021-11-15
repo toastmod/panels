@@ -20,8 +20,8 @@ pub trait ProgramHook {
         panic!("Cannot hook empty ProgramHook!")
     }
 
-    /// This is where the program takes control of the encoder and can render to it's texture.
-    fn render(&self, renderer: &mut TextureRenderer, state: &mut State, encoder: &mut wgpu::CommandEncoder) {
+    /// This is where the program builds it's `CommandBuffer` which will be submitted when rendering.
+    fn render<'a>(&self, renderer: &mut TextureRenderer, state: &'a mut State, render_pass: &mut wgpu::RenderPass<'a>) {
         panic!("Empty ProgramHook! (called render)")
     }
 
