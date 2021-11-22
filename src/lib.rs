@@ -12,21 +12,21 @@ mod tests {
 // https://sotrh.github.io/learn-wgpu
 
 mod camera;
-mod modelbuffers;
+pub mod modelbuffers;
 mod panel;
 mod panelmgmt;
-mod rect;
+pub mod rect;
 mod renderable;
-mod renderobj;
-mod resourcebytes;
+pub mod renderobj;
+pub mod resourcebytes;
 pub mod texture;
 pub mod texturerenderer;
 mod bindgroupreg;
 mod transform2d;
-mod util;
-mod timing;
+pub mod util;
+pub mod timing;
 pub mod wgpustate;
-mod programhook;
+pub mod programhook;
 mod renderablestate;
 mod rendererinit;
 mod apiloop;
@@ -40,14 +40,9 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 use crate::renderobj::{Position, RenderObject};
 use crate::transform2d::Transform2D;
-use wgpu::{CommandEncoder, SurfaceError, SurfaceTexture};
+pub use wgpu;
 use wgpustate::*;
-use winit::{
-    event::*,
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-};
-use crate::panel::Panel;
+pub use winit::*;
 use crate::programhook::ProgramHook;
 use crate::renderablestate::RenderableState;
 use crate::rendererinit::{ApplicationMut, RendererInit};
@@ -58,6 +53,10 @@ use crate::apiloop::*;
 use crate::appmgmt::{AppConductor, CloseReqResponse, EventLoopAction};
 use crate::proxyevents::ProxyEvent;
 use std::ops::Add;
+use winit::event::Event;
+use winit::event_loop::{ControlFlow, EventLoop};
+use winit::window::WindowBuilder;
+pub use bytemuck;
 
 // TODO: create a Texture resource if the Surface's Texture has not been reserved by a renderer.
 
@@ -258,7 +257,9 @@ pub fn start(mut conductor: Box<dyn AppConductor>) {
                 }
                 // TODO: Use a different EventLoop for Android and iOS
                 //  redraw_request is not supported properly on these platforms.
-                window.request_redraw();
+                if !skip_frame{
+                    window.request_redraw();
+                }
             }
 
             Event::RedrawRequested(_) => {

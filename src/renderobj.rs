@@ -55,10 +55,10 @@ impl Position {
 
 /// Data for a renderable object.
 pub struct RenderObject {
-    pub(crate) position: Transform2D,
-    pub(crate) pipeline: usize,
-    pub(crate) bind_group: usize,
-    pub(crate) model: usize,
+    pub position: Transform2D,
+    pub pipeline: usize,
+    pub bind_group: usize,
+    pub model: usize,
     pub(crate) uniforms: Vec<usize>
 }
 

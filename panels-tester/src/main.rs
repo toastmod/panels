@@ -1,8 +1,12 @@
+use crate::conductor::PanelsApp;
 
+mod panel;
+mod conductor;
 fn main() {
     println!("Hello, world!");
-    let mut conducter = Box::new(panels::appmgmt::PanelsApp{
+    let mut conductor = Box::new(PanelsApp{
+        window_focused: false,
         focused_panel: 0
     });
-    panels::start(conducter);
+    panels::start(conductor);
 }
