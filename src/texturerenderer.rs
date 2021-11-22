@@ -21,27 +21,30 @@ pub enum TextureViewQuery {
 
 /// The bridge between Textures and program functionality.
 pub struct TextureRenderer {
+    pub name: String,
     pub texture: TextureIndex,
     pub clear_or_load: wgpu::LoadOp<wgpu::Color>,
     pub this_object: RenderObject,
-    /// Other `TextureRenderer`s representing subprograms.
-    pub owned_elements: Vec<TextureRenderer>,
+
+    // Other `TextureRenderer`s representing subprograms.
+    // pub owned_elements: Vec<TextureRenderer>,
 
     /// The index of the `ProgramHook` associated with this `TextureRenderer`
     pub program_id: Option<usize>,
 
-    /// The `CallStatus` for the function that will submit the renderer's `CommandBuffer` to the command queue and commit rendering.
-    pub drawf_status: CallStatus,
+    /// The `Timing` frequency for the draw call.
+    pub drawf_status: Timing,
 
-    /// The `CallStatus` for the function that will poitentially update the renderer's `CommandBuffer`
-    pub updatef_status: CallStatus,
+    /// The `Timing` frequency for the update call.
+    pub updatef_status: Timing,
     ///// The function that will be called when a WindowEvent is fired in this renderer.
     //pub inputf: Box<InputFunc>
+
 }
 
 impl TextureRenderer {
     /// Creates a `TextureRenderer` that uses the given routine to draw elements.
-    pub fn new(program_id: Option<usize>, tex_index: TextureIndex) -> Self {
+    pub fn new(nametag: &str, program_id: Option<usize>, tex_index: TextureIndex) -> Self {
         // create texture
         // create uniforms
         // create bindgroup for both
@@ -55,17 +58,47 @@ impl TextureRenderer {
         };
 
         Self {
+            name: String::from(nametag),
             texture: tex_index,
             clear_or_load: wgpu::LoadOp::Load,
             this_object,
-            owned_elements: vec![],
+            //owned_elements: vec![],
             program_id,
             // drawf,
-            drawf_status: CallStatus::Inactive,
+            drawf_status: Timing::Never,
             // updatef,
-            updatef_status: CallStatus::Inactive,
+            updatef_status: Timing::Never,
             // inputf
         }
+    }
+
+    pub fn set_update_timing(&mut self, timing: Timing) {
+        match timing {
+            Timing::ASAP => {}
+            Timing::Framerate { .. } => {}
+            Timing::SpecificTime { .. } => {
+                // spawn a timer thread
+            }
+            Timing::Never => {}
+        };
+
+        self.updatef_status = timing;
+
+    }
+
+
+    pub fn set_render_timing(&mut self, timing: Timing) {
+        match timing {
+            Timing::ASAP => {}
+            Timing::Framerate { .. } => {}
+            Timing::SpecificTime { .. } => {
+                // spawn a timer thread
+            }
+            Timing::Never => {}
+        };
+
+        self.drawf_status = timing;
+
     }
 
     pub fn should_call_drawf(&mut self, redraw_request: bool) -> bool {
@@ -80,8 +113,8 @@ impl TextureRenderer {
             };
         }
 
+
         match &self.drawf_status {
-            CallStatus::Awaiting(timing) => match timing {
                 Timing::ASAP => true,
                 Timing::Framerate {
                     last_rendered_at,
@@ -105,16 +138,12 @@ impl TextureRenderer {
                 }
 
                 Timing::Never => false,
-            },
-            CallStatus::Inactive => false,
-            CallStatus::JustCalled(_) => false,
-        }
+            }
     }
 
 
     pub fn should_call_updatef(&mut self) -> bool {
         match &self.updatef_status {
-            CallStatus::Awaiting(timing) => match timing {
                 Timing::ASAP => true,
                 Timing::Framerate {
                     last_rendered_at,
@@ -138,9 +167,6 @@ impl TextureRenderer {
                 }
 
                 Timing::Never => false,
-            },
-            CallStatus::Inactive => false,
-            CallStatus::JustCalled(_) => false,
         }
     }
 
@@ -170,18 +196,18 @@ impl TextureRenderer {
     //     self.texture_view = Some(self.get_textureview(state).unwrap());
     // }
 
-    /// Set the `CallStatus` directly.
-    pub fn set_draw_status(&mut self, rs: CallStatus) {
-        self.drawf_status = rs;
-    }
-
-    /// Get a mutable reference to the draw function's `CallStatus` (useful for std::mem:swap)
-    pub fn mut_draw_status(&mut self) -> &mut CallStatus {
-        &mut self.drawf_status
-    }
-
-    /// Get an immutable reference to the draw function's `CallStatus` (useful for analysis).
-    pub fn ref_draw_status(&self) -> &CallStatus {
-        &self.drawf_status
-    }
+    // /// Set the `CallStatus` directly.
+    // pub fn set_draw_status(&mut self, rs: CallStatus) {
+    //     self.drawf_status = rs;
+    // }
+    //
+    // /// Get a mutable reference to the draw function's `CallStatus` (useful for std::mem:swap)
+    // pub fn mut_draw_status(&mut self) -> &mut CallStatus {
+    //     &mut self.drawf_status
+    // }
+    //
+    // /// Get an immutable reference to the draw function's `CallStatus` (useful for analysis).
+    // pub fn ref_draw_status(&self) -> &CallStatus {
+    //     &self.drawf_status
+    // }
 }

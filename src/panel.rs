@@ -1,3 +1,4 @@
+use std::time::Instant;
 use crate::programhook::*;
 use crate::rect::*;
 use crate::renderobj::RenderObject;
@@ -6,6 +7,7 @@ use crate::timing::{CallStatus, Timing};
 use crate::transform2d::Transform2D;
 use crate::wgpustate::State;
 use winit::event::WindowEvent;
+use crate::appmgmt::EventLoopAction;
 
 /// The logical side of the Panel, containing position data and rendering state.
 /// * Note: a Panel's RenderState/Object is only it's Panel canvas texture.
@@ -34,7 +36,8 @@ impl Panel {
 
 impl ProgramHook for Panel {
     fn init(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
-        renderer.set_draw_status(CallStatus::Awaiting(Timing::ASAP))
+        renderer.set_update_timing(Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 30f64 });
+        renderer.set_render_timing(Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 30f64 });
     }
     
     fn hook_renderer(&mut self, renderer_id: usize) {
@@ -66,40 +69,21 @@ impl ProgramHook for Panel {
 
     }
 
-    fn update(&mut self, renderer: &mut TextureRenderer, _state: &mut State) {
+    fn update(&mut self, renderer: &mut TextureRenderer, _state: &mut State) -> EventLoopAction {
         let obj = &renderer.this_object;
-        println!("update");
         _state.queue.write_buffer(
             &_state.models[obj.model].offset_buffer,
             0,
             bytemuck::cast_slice(&[obj.position]),
         );
-
+        EventLoopAction::None
     }
 
-    fn input(&mut self, renderer: &mut TextureRenderer, _state: &mut State, event: &WindowEvent) {
-        match event {
-            WindowEvent::Resized(_) => {}
-            WindowEvent::Moved(_) => {}
-            WindowEvent::CloseRequested => {}
-            WindowEvent::Destroyed => {}
-            WindowEvent::DroppedFile(_) => {}
-            WindowEvent::HoveredFile(_) => {}
-            WindowEvent::HoveredFileCancelled => {}
-            WindowEvent::ReceivedCharacter(_) => {}
-            WindowEvent::Focused(_) => {}
-            WindowEvent::KeyboardInput { .. } => {}
-            WindowEvent::ModifiersChanged(_) => {}
-            WindowEvent::CursorMoved { .. } => {}
-            WindowEvent::CursorEntered { .. } => {}
-            WindowEvent::CursorLeft { .. } => {}
-            WindowEvent::MouseWheel { .. } => {}
-            WindowEvent::MouseInput { .. } => {}
-            WindowEvent::TouchpadPressure { .. } => {}
-            WindowEvent::AxisMotion { .. } => {}
-            WindowEvent::Touch(_) => {}
-            WindowEvent::ScaleFactorChanged { .. } => {}
-            WindowEvent::ThemeChanged(_) => {}
-        }
+    fn input(&mut self, renderer: &mut TextureRenderer, _state: &mut State, event: &WindowEvent) -> EventLoopAction {
+        EventLoopAction::None
+    }
+
+    fn stop_program(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
+        ()
     }
 }

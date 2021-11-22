@@ -1,4 +1,8 @@
+
 fn main() {
     println!("Hello, world!");
-    panels::start()
+    let mut conducter = Box::new(panels::appmgmt::PanelsApp{
+        focused_panel: 0
+    });
+    panels::start(conducter);
 }

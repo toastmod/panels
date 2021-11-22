@@ -1,23 +1,23 @@
-use std::time::{Duration, Instant};
 use crate::bindgroupreg::BindGroupReg;
 use crate::modelbuffers::Model;
+use crate::programhook::ProgramHook;
+use crate::renderablestate::RenderableState;
 use crate::renderobj::RenderObject;
 use crate::resourcebytes::*;
 use crate::texture;
 use crate::texturerenderer::{TextureIndex, TextureRenderer, TextureViewQuery};
-use crate::timing::{CallStatus, Timing,};
+use crate::timing::{CallStatus, Timing};
 use crate::transform2d::Transform2D;
-use image::GenericImageView;
-use wgpu::{SurfaceTexture, TextureView};
-use wgpu::util::DeviceExt;
-use winit::{event::*, window::*};
-use crate::programhook::ProgramHook;
-use crate::renderablestate::RenderableState;
 use crate::util::fps_to_dur;
+use image::GenericImageView;
+use std::time::{Duration, Instant};
+use wgpu::util::DeviceExt;
+use wgpu::{SurfaceTexture, TextureView};
+use winit::{event::*, window::*};
 
 /// The render function for the WGPU `State`, defined by the user and called in the EventLoop
 /// The `bool` parameter indicates a forced surface redraw request.
-pub type StateRenderFunction = Fn(&mut State, bool) -> Result<(),wgpu::SurfaceError>;
+pub type StateRenderFunction = Fn(&mut State, bool) -> Result<(), wgpu::SurfaceError>;
 
 pub struct State {
     // pub renderf: Box<StateRenderFunction>,
@@ -34,12 +34,14 @@ pub struct State {
 
     /// All textures stored in this state.
     pub textures: Vec<texture::Texture>,
-
     // The renderers for all textures, including the main Surface.
     // pub texture_renderers: Vec<TextureRenderer>,
 
     // Panels that will render.
     // pub panel_objects: Vec<RenderObject>,
+
+    pub loop_fps: Option<f64>,
+
 }
 
 impl State {
@@ -48,14 +50,20 @@ impl State {
 
         let instance = wgpu::Instance::new(wgpu::Backends::all());
         let surface = unsafe { instance.create_surface(window) };
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
-                force_fallback_adapter: false,
-                compatible_surface: Some(&surface),
+        let adapter = instance.enumerate_adapters(wgpu::Backends::all())
+            .filter(|adapter| {
+                // Check if this adapter supports our surface
+                surface.get_preferred_format(&adapter).is_some()
             })
-            .await
+            .next()
             .unwrap();
+            // .request_adapter(&wgpu::RequestAdapterOptions {
+            //     power_preference: wgpu::PowerPreference::default(),
+            //     force_fallback_adapter: false,
+            //     compatible_surface: Some(&surface),
+            // })
+            // .await
+            // .unwrap();
 
         let (device, queue) = adapter
             .request_device(
@@ -238,7 +246,16 @@ impl State {
             bind_groups: vec![main_panel_bind_group],
             textures: vec![diffuse_texture],
             // texture_renderers: vec![],
+            loop_fps: None
         }
+    }
+
+    pub fn get_fps(&self) -> Option<f64> {
+        self.loop_fps
+    }
+
+    pub fn set_fps(&mut self, fps: Option<f64>) {
+        self.loop_fps = fps;
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -276,268 +293,60 @@ impl State {
         }
     }
 
-    pub fn update(&mut self) {
-        // update offsets
-        // for obj in &self.objects {
-        //     println!("update");
-        //     self.queue.write_buffer(
-        //         &self.models[obj.model].offset_buffer,
-        //         0,
-        //         bytemuck::cast_slice(&[obj.position]),
-        //     )
-        // }
-    }
-
-    /// Renders the Surface objects (panels).
-    /// `force_all` will draw all panels.
-    // pub fn render_surface(&mut self, force_all: bool, clear_or_load: wgpu::LoadOp) -> Result<(), wgpu::SurfaceError>{
-    //
-    //     // SURFACE TEXTURE RENDERPASSING
-    //     // This is where Panels are drawn to the master Surface
-    //     let output = self.surface.get_current_texture()?;
-    //     let view = output
-    //         .texture
-    //         .create_view(&wgpu::TextureViewDescriptor::default());
-    //     {
-    //         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-    //             label: None,
-    //             color_attachments: &[wgpu::RenderPassColorAttachment {
-    //                 view: &view,
-    //                 resolve_target: None,
-    //                 ops: wgpu::Operations {
-    //                     load: clear_or_load,
-    //                     store: true,
-    //                 },
-    //             }],
-    //             depth_stencil_attachment: None,
-    //         });
-    //
-    //         for obj in &self.objects {
-    //             let my_model = &self.models[obj.model];
-    //
-    //             render_pass.set_pipeline(&self.render_pipelines[obj.pipeline]);
-    //             render_pass.set_bind_group(0, &self.bind_groups[obj.bind_group], &[]);
-    //             render_pass.set_vertex_buffer(0, my_model.vertex_buffer.slice(..));
-    //             render_pass
-    //                 .set_index_buffer(my_model.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-    //             render_pass.draw_indexed(0..my_model.num_indices, 0, 0..1);
-    //         }
-    //     }
-    // }
-
-    // /// Renders any objects that request it, first to thier textures, and then the Panels.
-    // pub fn render_loop(&mut self, force_surface_render: bool) -> Result<(), wgpu::SurfaceError> {
-    //     (self.renderf)(&mut self, force_surface_render)
-    // }
-
-
-    // pub fn api_loop(&mut self, redraw_request: bool, renderers: &mut Vec<TextureRenderer>, programs: &mut Vec<Box<dyn ProgramHook>>) -> Result<(), wgpu::SurfaceError> {
-    //
-    //     let mut encoder = self
-    //         .device
-    //         .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-    //
-    //     // Only present the surface if it was drawn to
-    //     let mut present_surface = false;
-    //
-    //     // TEXTURE RENDERER RENDERPASSING
-    //     // This is where panels
-    //     let mut changing_statuses: Vec<&mut CallStatus> = vec![];
-    //     let mut render_cmd_buffers: Vec<wgpu::CommandBuffer> = vec![];
-    //     for tex_rend in renderers {
-    //
-    //         // check if update is ready to execute
-    //         let mut i_should_update = match &mut tex_rend.updatef_status {
-    //             CallStatus::Awaiting(timing) => match timing {
-    //                 Timing::ASAP => true,
-    //                 Timing::Framerate {
-    //                     last_rendered_at,
-    //                     desired_framerate,
-    //                 } => {
-    //                     if last_rendered_at.elapsed() >= fps_to_dur(*desired_framerate) {
-    //                         true
-    //                     } else {
-    //                         false
-    //                     }
-    //                 }
-    //                 Timing::SpecificTime { last_rendered_at, desired_wait_time } => {
-    //                     if last_rendered_at.elapsed() >= *desired_wait_time {
-    //                         true
-    //                     } else {
-    //                         false
-    //                     }
-    //                 }
-    //
-    //                 Timing::Never => false
-    //             },
-    //             CallStatus::Inactive => {false}
-    //             CallStatus::JustCalled(_) => {false}
-    //         };
-    //
-    //         if i_should_update {
-    //
-    //         }
-    //
-    //
-    //         // check rendering next
-    //         let mut i_should_render = match &mut tex_rend.drawf_status {
-    //             CallStatus::Awaiting(timing) => match timing {
-    //                 Timing::ASAP => true,
-    //                 Timing::Framerate {
-    //                     last_rendered_at,
-    //                     desired_framerate,
-    //                 } => {
-    //                     if last_rendered_at.elapsed() >= fps_to_dur(*desired_framerate) {
-    //                         true
-    //                     } else {
-    //                         false
-    //                     }
-    //                 }
-    //                 Timing::SpecificTime { last_rendered_at, desired_wait_time } => {
-    //                     if last_rendered_at.elapsed() >= *desired_wait_time {
-    //                         true
-    //                     } else {
-    //                         false
-    //                     }
-    //                 }
-    //
-    //                 Timing::Never => false
-    //             },
-    //             CallStatus::Inactive => {false}
-    //             CallStatus::JustCalled(_) => {false}
-    //         };
-    //
-    //         // check force render
-    //         if redraw_request {
-    //             match tex_rend.texture {
-    //                 TextureIndex::Surface => {
-    //                     i_should_render = true;
-    //                 }
-    //                 _ => {}
-    //             }
-    //         }
-    //
-    //         // render if i should
-    //         if i_should_render {
-    //
-    //             let mut encoder = _state
-    //                 .device
-    //                 .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-    //
-    //             // check if this renderer has a `TextureView` loaded
-    //             if match &renderer.texture_view {
-    //                 None => true,
-    //                 Some(_) => false
-    //             } {
-    //                 renderer.load_textureview(_state);
-    //             }
-    //
-    //             // create renderpass
-    //             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-    //                 label: None,
-    //                 color_attachments: &[wgpu::RenderPassColorAttachment {
-    //                     view: &renderer.texture_view.as_ref().unwrap(),
-    //                     resolve_target: None,
-    //                     ops: wgpu::Operations {
-    //                         load: wgpu::LoadOp::Clear(wgpu::Color {
-    //                             r: 0.1,
-    //                             g: 0.2,
-    //                             b: 0.3,
-    //                             a: 1.0,
-    //                         }),
-    //                         store: true,
-    //                     },
-    //                 }],
-    //                 depth_stencil_attachment: None,
-    //             });
-    //
-    //             // call this renderer's ProgramHook rendercall, add it's CommandBuffer to the stack
-    //             render_cmd_buffers.push(programs[tex_rend.program_id.unwrap().clone()].render(tex_rend, self));
-    //
-    //             // check if texture was the Surface
-    //             match tex_rend.texture {
-    //                 TextureIndex::Surface => {
-    //                     //surface_output = Some(self.surface.get_current_texture()?);
-    //                     present_surface = true;
-    //                 }
-    //                 TextureIndex::Index(_) => {}
-    //             }
-    //
-    //             // prepare to change the draw status
-    //             changing_statuses.push(tex_rend.mut_draw_status());
-    //         }
-    //     }
-    //
-    //     // render surface elements that are ready to render
-    //     // self.render_surface(false, wgpu::LoadOp::Load)?;
-    //
-    //     // submit commands for all renderpasses
-    //     self.queue.submit(render_cmd_buffers);
-    //
-    //     // preset to the screen if Surface was drawn
-    //     if present_surface {
-    //         self.surface.get_current_texture()?.present();
-    //     }
-    //
-    //     // change all renderer statuses accordingly
-    //     let time_rendered = Instant::now();
-    //     for stat in changing_statuses {
-    //         *stat = CallStatus::JustCalled(time_rendered.clone())
-    //     }
-    //
-    //     // for anxiety reasons, ensure the references are dropped.
-    //     drop(changing_statuses);
-    //
-    //     Ok(())
-    // }
-
-
-
-    pub fn api_loop(&mut self, redraw_request: bool, renderers: &mut Vec<TextureRenderer>, programs: &mut Vec<Box<dyn ProgramHook>>) -> Result<(), wgpu::SurfaceError> {
-
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor{ label: None });
+    pub fn update(
+        &mut self,
+        redraw_request: bool,
+        renderers: &mut Vec<TextureRenderer>,
+        programs: &mut Vec<Box<dyn ProgramHook>>,
+    ) -> Result<(), wgpu::SurfaceError> {
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         let mut surface_texture = self.surface.get_current_texture()?;
-        let mut surface_view: wgpu::TextureView = surface_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut surface_view: wgpu::TextureView = surface_texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
         let mut texture_views: Vec<wgpu::TextureView> = vec![];
 
         // note: scope here for renderpass ownership
         {
-            for tex_rend in renderers {
-                if tex_rend.should_call_updatef() {
-                    programs[tex_rend.program_id.unwrap().clone()].update(tex_rend, self);
-                }
+            let mut tex_rend = &mut renderers[0];
 
-                if tex_rend.should_call_drawf(redraw_request) {
+            if tex_rend.should_call_updatef() {
+                programs[tex_rend.program_id.unwrap().clone()].update(tex_rend, self);
+            }
 
-                    // get the correct TextureView to this renderer's Texture
-                    let view_ref = match tex_rend.get_textureview(self)? {
-                        TextureViewQuery::RequestSurfaceView => &surface_view,
-                        TextureViewQuery::View(v) => {
-                            let view_id = texture_views.len();
-                            texture_views.push(v);
-                            &texture_views[view_id]
-                        }
-                    };
+            if tex_rend.should_call_drawf(redraw_request) {
+                // get the correct TextureView to this renderer's Texture
+                let view_ref = match tex_rend.get_textureview(self)? {
+                    TextureViewQuery::RequestSurfaceView => &surface_view,
+                    TextureViewQuery::View(v) => {
+                        let view_id = texture_views.len();
+                        texture_views.push(v);
+                        &texture_views[view_id]
+                    }
+                };
 
-                    // create a RenderPass based on the TextureRenderer's preference
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: None,
-                        color_attachments: &[wgpu::RenderPassColorAttachment {
-                            view: view_ref,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: tex_rend.clear_or_load.clone(),
-                                store: true,
-                            },
-                        }],
-                        depth_stencil_attachment: None,
-                    });
+                // create a RenderPass based on the TextureRenderer's preference
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: None,
+                    color_attachments: &[wgpu::RenderPassColorAttachment {
+                        view: view_ref,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: tex_rend.clear_or_load.clone(),
+                            store: true,
+                        },
+                    }],
+                    depth_stencil_attachment: None,
+                });
 
-                    // mutate the render_pass according to the program
-                    programs[tex_rend.program_id.unwrap().clone()].render(tex_rend, self, &mut render_pass);
-
-                }
-
+                // mutate the render_pass according to the program
+                programs[tex_rend.program_id.unwrap().clone()].render(
+                    tex_rend,
+                    self,
+                    &mut render_pass,
+                );
             }
         }
 
@@ -549,4 +358,3 @@ impl State {
         Ok(())
     }
 }
-

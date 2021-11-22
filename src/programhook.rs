@@ -1,9 +1,8 @@
 use winit::event::WindowEvent;
+use crate::appmgmt::EventLoopAction;
 use crate::texturerenderer::TextureRenderer;
 use crate::timing::{CallStatus, Timing};
 use crate::wgpustate::State;
-
-
 
 /// A struct that represents an applet that can be rendered to a texture.
 pub trait ProgramHook {
@@ -20,20 +19,35 @@ pub trait ProgramHook {
         panic!("Cannot hook empty ProgramHook!")
     }
 
-    /// This is where the program builds it's `CommandBuffer` which will be submitted when rendering.
+    /// The program is passed a reference to a `RenderPass` targetting it's `TextureRenderer` texture.
+    /// Here you can render resources stored in the `State`.
     fn render<'a>(&self, renderer: &mut TextureRenderer, state: &'a mut State, render_pass: &mut wgpu::RenderPass<'a>) {
         panic!("Empty ProgramHook! (called render)")
     }
 
     /// This is where the program can update it's data at a rate set by the `Timing` of the `CallStatus`.
     /// You can change the renderer hook, or do pretty much anything here.
-    fn update(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
+    fn update(&mut self, renderer: &mut TextureRenderer, state: &mut State) -> EventLoopAction {
         panic!("Empty ProgramHook! (called update)")
     }
 
+    /// The program recieves input from the `AppConductor`.
     /// You can change the renderer hook, or do pretty much anything here.
-    fn input(&mut self, renderer: &mut TextureRenderer, state: &mut State, event: &WindowEvent) {
+    fn input(&mut self, renderer: &mut TextureRenderer, state: &mut State, event: &WindowEvent) -> EventLoopAction {
         panic!("Empty ProgramHook! (called input)")
     }
+
+    /// This function should prepare the program to stop.
+    fn stop_program(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
+        panic!("Empty ProgramHook! (called stop_program)")
+    }
+
+    // fn on_redraw_request
+
+    // fn on_main_events_cleared
+
+    // fn on_close(&mut self, renderer &mut TextureRenderer, state: &mut State, event: &WindowEvent) {
+    //     panic!("Empty ProgramHook! (called on_close)")
+    // }
 
 }
