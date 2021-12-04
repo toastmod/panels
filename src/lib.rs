@@ -232,6 +232,7 @@ pub fn start(mut conductor: Box<dyn AppConductor>) {
 
             Event::UserEvent(pe) => {
                 match pe {
+                    ProxyEvent::BUMP => {}
                     ProxyEvent::UPDATE(rend_id) => {
                         let renderer = &mut renderers[rend_id];
                         programs[renderer.program_id.unwrap().clone()].update(renderer, &mut state);

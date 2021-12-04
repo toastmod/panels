@@ -93,7 +93,7 @@ impl State {
         // uniform buffer setup
 
         let pos_unif = Transform2D {
-            pos: [0.5, 0.5, 0.0],
+            pos: [0.0, 0.0, 0.0],
         };
 
         let pos_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -213,18 +213,18 @@ impl State {
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(PENTAGON_VERTICES),
+            contents: bytemuck::cast_slice(RECT_VERTICES),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(PENTAGON_INDICES),
+            contents: bytemuck::cast_slice(RECT_INDICES),
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let num_indices = PENTAGON_INDICES.len() as u32;
-
+        let num_indices = RECT_INDICES.len() as u32;
+        println!("Indicies: {}", num_indices);
         models.push(Model {
             vertex_buffer,
             index_buffer,

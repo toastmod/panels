@@ -50,21 +50,35 @@ unsafe impl bytemuck::Zeroable for Vertex {}
 //     },
 // ];
 
-pub const PENTAGON_VERTICES: &[Vertex] = &[
-    Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 1.0-0.99240386], }, // A
-    Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 1.0-0.56958646], }, // B
-    Vertex { position: [-0.21918549, -0.44939706, 0.0], tex_coords: [0.28081453, 1.0-0.050602943], }, // C
-    Vertex { position: [0.35966998, -0.3473291, 0.0], tex_coords: [0.85967, 1.0-0.15267089], }, // D
-    Vertex { position: [0.44147372, 0.2347359, 0.0], tex_coords: [0.9414737, 1.0-0.7347359], }, // E
+// pub const PENTAGON_VERTICES: &[Vertex] = &[
+//     Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 1.0-0.99240386], }, // A
+//     Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 1.0-0.56958646], }, // B
+//     Vertex { position: [-0.21918549, -0.44939706, 0.0], tex_coords: [0.28081453, 1.0-0.050602943], }, // C
+//     Vertex { position: [0.35966998, -0.3473291, 0.0], tex_coords: [0.85967, 1.0-0.15267089], }, // D
+//     Vertex { position: [0.44147372, 0.2347359, 0.0], tex_coords: [0.9414737, 1.0-0.7347359], }, // E
+// ];
+//
+// pub const PENTAGON_INDICES: &[u16] = &[
+//     0,1,4,
+//     1,2,4,
+//     2,3,4,
+//     // padding
+//     0,
+// ];
+
+pub const RECT_VERTICES: &[Vertex] = &[
+    Vertex {position: [-1.0,1.0,0.0], tex_coords: [0.0,0.0]}, // top left
+    Vertex {position: [-1.0,-1.0,0.0], tex_coords: [0.0,1.0]},  // bottom left
+    Vertex {position: [1.0,-1.0,0.0], tex_coords: [1.0,1.0]}, // bottom right
+    Vertex {position: [1.0,1.0,0.0], tex_coords: [1.0,0.0]}, // top right
 ];
 
-pub const PENTAGON_INDICES: &[u16] = &[
-    0,1,4,
-    1,2,4,
-    2,3,4,
-    // padding
+pub const RECT_INDICES: &[u16] = &[
+    0,1,2,
+    2,3,0,
     0,
 ];
+
 
 pub const diffuse_bytes: &[u8] = include_bytes!("happy-tree.png");
 
