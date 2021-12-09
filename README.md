@@ -1,10 +1,12 @@
 # Panels
-WGPU based user interface for my personal use.  
+A flexible framework for `wgpu` applications.
 
-# The idea
-To create a simple UI of panels that can be rearranged, or even detatched into separate windows.
-Window events can be filtered into the currently focused panel, allowing applets to interpret interactions as separate applications.
-I also want this to be my startup code for projects that use WGPU.
+# Introduction
+This framework lets you bring your own `wgpu` code, and skip some of the in-between setup.
+There are also convienient helpers for managing the combinations of `RenderPipeline` and `BindGroupLayouts`, as well as rendering models with vertex and index buffers.
+
+# Documentation
+Coming soon...
 
 # Credit
-My code is based on the [Learn WGPU tutorial.](https://sotrh.github.io/learn-wgpu/)
+Some of my code is based on the [Learn Wgpu tutorial.](https://sotrh.github.io/learn-wgpu/)
