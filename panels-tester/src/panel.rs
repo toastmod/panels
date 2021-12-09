@@ -18,6 +18,9 @@ pub struct Panel {
 
     /// The `TextureRenderer` index on the State's `texture_renderers` list.
     renderer_id: usize,
+
+    /// The bindgroup locations for animations on this renderer
+    animation_bindgroups: Vec<usize>
 }
 
 impl Panel {
@@ -25,11 +28,12 @@ impl Panel {
     pub fn new() -> Self {
         Self {
             world_rect: WorldRectangle {
-                pos: WorldPoint::new(0f32, 0f32),
+                pos: WorldPoint::new(0f32, 0f32, 0f32),
                 width: 0.0,
                 height: 0.0,
             },
             renderer_id: 0,
+            animation_bindgroups: vec![]
         }
     }
 }
@@ -37,7 +41,8 @@ impl Panel {
 impl ProgramHook for Panel {
     fn init(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
         renderer.set_update_timing(Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 30f64 });
-        renderer.set_render_timing(Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 30f64 });
+        renderer.set_render_timing(state, Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 30f64 });
+        //renderer.my_objects.push()
     }
 
     fn hook_renderer(&mut self, renderer_id: usize) {
@@ -51,13 +56,9 @@ impl ProgramHook for Panel {
         render_pass: &mut wgpu::RenderPass<'a>
     ) {
 
-        let obj = &renderer.this_object;
-        let my_model = &_state.models[obj.model];
-        render_pass.set_pipeline(&_state.render_pipelines[obj.pipeline]);
-        render_pass.set_bind_group(0, &_state.bind_groups[obj.bind_group], &[]);
-        render_pass.set_vertex_buffer(0, my_model.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(my_model.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        render_pass.draw_indexed(0..my_model.num_indices, 0, 0..1);
+        for obj in &renderer.my_objects {
+            obj.render_this(_state, render_pass);
+        }
 
         // render any subprograms to thier own textures if they are ready (check Timing)
 
@@ -70,12 +71,12 @@ impl ProgramHook for Panel {
     }
 
     fn update(&mut self, renderer: &mut TextureRenderer, _state: &mut State) -> EventLoopAction {
-        let obj = &renderer.this_object;
-        _state.queue.write_buffer(
-            &_state.models[obj.model].offset_buffer,
-            0,
-            bytemuck::cast_slice(&[obj.position]),
-        );
+        // let obj = &renderer.my_objects[0];
+        // _state.queue.write_buffer(
+        //     &_state.models[obj.model].offset_buffer,
+        //     0,
+        //     bytemuck::cast_slice(&[obj.position]),
+        // );
         EventLoopAction::None
     }
 

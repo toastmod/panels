@@ -55,11 +55,11 @@ impl Position {
 
 /// Data for a renderable object.
 pub struct RenderObject {
-    pub position: Transform2D,
+    pub position: WorldPoint,
     pub pipeline: usize,
     pub bind_group: usize,
     pub model: usize,
-    pub(crate) uniforms: Vec<usize>
+    pub uniforms: Vec<usize>,
 }
 
 impl RenderObject {
@@ -71,23 +71,37 @@ impl RenderObject {
         // create uniforms
 
         Self {
-            position: Transform2D::new(0.0,0.0,0.0),
+            position: WorldPoint::new(0.0,0.0,0.0),
             pipeline: 0,
             bind_group: 0,
             model: 0,
-            uniforms: vec![]
+            uniforms: vec![],
         }
         
     }
 
-    // pub fn render<'a>(&self, state: &'a State, render_pass: &'a mut wgpu::RenderPass<'a>) {
-    //
-    //     let my_model = &state.models[self.model];
-    //
-    //     render_pass.set_pipeline(&state.render_pipelines[self.pipeline]);
-    //     render_pass.set_bind_group(0, &state.bind_groups[self.bind_group], &[]);
-    //     render_pass.set_vertex_buffer(0, my_model.vertex_buffer.slice(..));
-    //     render_pass.set_index_buffer(my_model.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-    //     render_pass.draw_indexed(0..my_model.num_indices, 0, 0..1);
-    // }
+    pub fn new_placeholder_rect() -> Self {
+        RenderObject {
+            // default 0.0,0.0 position
+            position: WorldPoint::new(0.0, 0.0, 0.0),
+            // default textured verticies pipeline/shader
+            pipeline: 0,
+            // default tree_texure and position uniforms
+            bind_group: 0,
+            // default rect model (vert/index buffer)
+            model: 0,
+            uniforms: vec![],
+        }
+    }
+
+    pub fn render_this<'a>(&self, state: &'a State, render_pass: &mut wgpu::RenderPass<'a>) {
+
+        let my_model = &state.models[self.model];
+
+        render_pass.set_pipeline(&state.render_pipelines[self.pipeline]);
+        render_pass.set_bind_group(0, &state.bind_groups[self.bind_group], &[]);
+        render_pass.set_vertex_buffer(0, my_model.vertex_buffer.slice(..));
+        render_pass.set_index_buffer(my_model.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.draw_indexed(0..my_model.num_indices, 0, 0..1);
+    }
 }

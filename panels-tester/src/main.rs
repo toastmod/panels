@@ -1,7 +1,10 @@
 use crate::conductor::PanelsApp;
+// use panels::pipelines::{Pipeline, BindSlot};
 
 mod panel;
+mod surface;
 mod conductor;
+
 fn main() {
     println!("Hello, world!");
     let mut conductor = Box::new(PanelsApp{
@@ -9,4 +12,5 @@ fn main() {
         focused_panel: 0
     });
     panels::start(conductor);
+
 }

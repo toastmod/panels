@@ -14,6 +14,9 @@ use std::time::{Duration, Instant};
 use wgpu::util::DeviceExt;
 use wgpu::{SurfaceTexture, TextureView};
 use winit::{event::*, window::*};
+use crate::texture::Texture;
+// use crate::pipelines::Pipeline;
+use std::collections::HashMap;
 
 /// The render function for the WGPU `State`, defined by the user and called in the EventLoop
 /// The `bool` parameter indicates a forced surface redraw request.
@@ -27,18 +30,30 @@ pub struct State {
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipelines: Vec<wgpu::RenderPipeline>,
+    /// A map for each pipeline.
+    // pub pipeline_map: HashMap<&str,Pipeline>,
     pub models: Vec<Model>,
     pub uniform_buffers: Vec<wgpu::Buffer>,
-    pub panel_bind_group_layout: wgpu::BindGroupLayout,
+    pub bindgroup_layouts: Vec<wgpu::BindGroupLayout>,
     pub bind_groups: Vec<wgpu::BindGroup>,
 
     /// All textures stored in this state.
     pub textures: Vec<texture::Texture>,
+
+    // /// A hashmap for labelling RenderPipelines
+    // pub pipeline_map: HashMap<&str, usize>,
+    //
+    // /// A hashmap for labelling BindGroupLayouts
+    // pub bglayout_map: HashMap<&str, usize>,
+    //
+    // /// A hashmap for labelling BindGroups
+    // pub bindgroup_map: HashMap<&str, usize>,
+
     // The renderers for all textures, including the main Surface.
     // pub texture_renderers: Vec<TextureRenderer>,
 
-    // Panels that will render.
-    // pub panel_objects: Vec<RenderObject>,
+    // // Data for an object to render.
+    // pub objects: Vec<RenderObject>,
 
     pub loop_fps: Option<f64>,
 
@@ -228,6 +243,7 @@ impl State {
         models.push(Model {
             vertex_buffer,
             index_buffer,
+            index_format: wgpu::IndexFormat::Uint16,
             offset_buffer: pos_buffer,
             num_indices,
         });
@@ -240,20 +256,52 @@ impl State {
             config,
             size,
             render_pipelines: vec![render_pipeline],
+            // pipeline_map: HashMap::new(),
             models,
             uniform_buffers: vec![],
-            panel_bind_group_layout,
+            bindgroup_layouts: vec![panel_bind_group_layout],
             bind_groups: vec![main_panel_bind_group],
             textures: vec![diffuse_texture],
             // texture_renderers: vec![],
+            // objects: vec![],
+            // pipeline_map: HashMap::new(),
+            // bglayout_map: HashMap::new(),
+            // bindgroup_map: HashMap::new(),
             loop_fps: None
         }
     }
 
+    pub fn add_texture(&mut self, tex: Texture) -> usize {
+        // self.bindgroup_layouts[0].
+        let o = self.textures.len();
+        self.textures.push(tex);
+        o
+    }
+
+    // pub fn add_pipeline(&mut self, name: &str, desc: &wgpu::RenderPipelineDescriptor){
+    //     let o = self.render_pipelines.len();
+    //     self.render_pipelines.push(&self.device.create_render_pipeline(desc));
+    //     self.pipeline_map.insert(name,o);
+    // }
+    //
+    // pub fn add_bindgroup(&mut self, name: &str, desc: &wgpu::BindGroupDescriptor) {
+    //     let o = self.bind_groups.len();
+    //     self.bind_groups.push(&self.device.create_bind_group(desc));
+    //     self.bindgroup_map.insert(name, o);
+    // }
+    //
+    // pub fn add_bindgrouplayout(&mut self, name: &str, desc: &wgpu::BindGroupLayoutDescriptor) {
+    //     let o = self.bindgroup_layouts.len();
+    //     self.bindgroup_layouts.push(&self.device.create_bind_group_layout(desc));
+    //     self.bglayout_map.insert(name, o);
+    // }
+
+    /// Get the Surface framerate.
     pub fn get_fps(&self) -> Option<f64> {
         self.loop_fps
     }
 
+    /// Set the Surface framerate.
     pub fn set_fps(&mut self, fps: Option<f64>) {
         self.loop_fps = fps;
     }
@@ -267,94 +315,99 @@ impl State {
         }
     }
 
-    pub fn input(&mut self, event: &WindowEvent) {
-        match event {
-            WindowEvent::Resized(_) => {}
-            WindowEvent::Moved(_) => {}
-            WindowEvent::CloseRequested => {}
-            WindowEvent::Destroyed => {}
-            WindowEvent::DroppedFile(_) => {}
-            WindowEvent::HoveredFile(_) => {}
-            WindowEvent::HoveredFileCancelled => {}
-            WindowEvent::ReceivedCharacter(_) => {}
-            WindowEvent::Focused(_) => {}
-            WindowEvent::KeyboardInput { .. } => {}
-            WindowEvent::ModifiersChanged(_) => {}
-            WindowEvent::CursorMoved { .. } => {}
-            WindowEvent::CursorEntered { .. } => {}
-            WindowEvent::CursorLeft { .. } => {}
-            WindowEvent::MouseWheel { .. } => {}
-            WindowEvent::MouseInput { .. } => {}
-            WindowEvent::TouchpadPressure { .. } => {}
-            WindowEvent::AxisMotion { .. } => {}
-            WindowEvent::Touch(_) => {}
-            WindowEvent::ScaleFactorChanged { .. } => {}
-            WindowEvent::ThemeChanged(_) => {}
-        }
+    /// Adjusts the FPS according to the `Timing` of each renderer's updatef and drawf.
+    pub fn adjust_fps(&mut self) {
+        todo!()
     }
 
-    pub fn update(
-        &mut self,
-        redraw_request: bool,
-        renderers: &mut Vec<TextureRenderer>,
-        programs: &mut Vec<Box<dyn ProgramHook>>,
-    ) -> Result<(), wgpu::SurfaceError> {
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        let mut surface_texture = self.surface.get_current_texture()?;
-        let mut surface_view: wgpu::TextureView = surface_texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut texture_views: Vec<wgpu::TextureView> = vec![];
+    // pub fn input(&mut self, event: &WindowEvent) {
+    //     match event {
+    //         WindowEvent::Resized(_) => {}
+    //         WindowEvent::Moved(_) => {}
+    //         WindowEvent::CloseRequested => {}
+    //         WindowEvent::Destroyed => {}
+    //         WindowEvent::DroppedFile(_) => {}
+    //         WindowEvent::HoveredFile(_) => {}
+    //         WindowEvent::HoveredFileCancelled => {}
+    //         WindowEvent::ReceivedCharacter(_) => {}
+    //         WindowEvent::Focused(_) => {}
+    //         WindowEvent::KeyboardInput { .. } => {}
+    //         WindowEvent::ModifiersChanged(_) => {}
+    //         WindowEvent::CursorMoved { .. } => {}
+    //         WindowEvent::CursorEntered { .. } => {}
+    //         WindowEvent::CursorLeft { .. } => {}
+    //         WindowEvent::MouseWheel { .. } => {}
+    //         WindowEvent::MouseInput { .. } => {}
+    //         WindowEvent::TouchpadPressure { .. } => {}
+    //         WindowEvent::AxisMotion { .. } => {}
+    //         WindowEvent::Touch(_) => {}
+    //         WindowEvent::ScaleFactorChanged { .. } => {}
+    //         WindowEvent::ThemeChanged(_) => {}
+    //     }
+    // }
 
-        // note: scope here for renderpass ownership
-        {
-            let mut tex_rend = &mut renderers[0];
-
-            if tex_rend.should_call_updatef() {
-                programs[tex_rend.program_id.unwrap().clone()].update(tex_rend, self);
-            }
-
-            if tex_rend.should_call_drawf(redraw_request) {
-                // get the correct TextureView to this renderer's Texture
-                let view_ref = match tex_rend.get_textureview(self)? {
-                    TextureViewQuery::RequestSurfaceView => &surface_view,
-                    TextureViewQuery::View(v) => {
-                        let view_id = texture_views.len();
-                        texture_views.push(v);
-                        &texture_views[view_id]
-                    }
-                };
-
-                // create a RenderPass based on the TextureRenderer's preference
-                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: None,
-                    color_attachments: &[wgpu::RenderPassColorAttachment {
-                        view: view_ref,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: tex_rend.clear_or_load.clone(),
-                            store: true,
-                        },
-                    }],
-                    depth_stencil_attachment: None,
-                });
-
-                // mutate the render_pass according to the program
-                programs[tex_rend.program_id.unwrap().clone()].render(
-                    tex_rend,
-                    self,
-                    &mut render_pass,
-                );
-            }
-        }
-
-        self.queue.submit(std::iter::once(encoder.finish()));
-
-        // TODO: manage if the surface should be presented or not
-        surface_texture.present();
-
-        Ok(())
-    }
+    // pub fn update(
+    //     &mut self,
+    //     redraw_request: bool,
+    //     renderers: &mut Vec<TextureRenderer>,
+    //     programs: &mut Vec<Box<dyn ProgramHook>>,
+    // ) -> Result<(), wgpu::SurfaceError> {
+    //     let mut encoder = self
+    //         .device
+    //         .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    //     let mut surface_texture = self.surface.get_current_texture()?;
+    //     let mut surface_view: wgpu::TextureView = surface_texture
+    //         .texture
+    //         .create_view(&wgpu::TextureViewDescriptor::default());
+    //     let mut texture_views: Vec<wgpu::TextureView> = vec![];
+    //
+    //     // note: scope here for renderpass ownership
+    //     {
+    //         let mut tex_rend = &mut renderers[0];
+    //
+    //         if tex_rend.should_call_updatef() {
+    //             programs[tex_rend.program_id.unwrap().clone()].update(tex_rend, self);
+    //         }
+    //
+    //         if tex_rend.should_call_drawf(redraw_request) {
+    //             // get the correct TextureView to this renderer's Texture
+    //             let view_ref = match tex_rend.get_textureview(self)? {
+    //                 TextureViewQuery::RequestSurfaceView => &surface_view,
+    //                 TextureViewQuery::View(v) => {
+    //                     let view_id = texture_views.len();
+    //                     texture_views.push(v);
+    //                     &texture_views[view_id]
+    //                 }
+    //             };
+    //
+    //             // create a RenderPass based on the TextureRenderer's preference
+    //             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    //                 label: None,
+    //                 color_attachments: &[wgpu::RenderPassColorAttachment {
+    //                     view: view_ref,
+    //                     resolve_target: None,
+    //                     ops: wgpu::Operations {
+    //                         load: tex_rend.clear_or_load.clone(),
+    //                         store: true,
+    //                     },
+    //                 }],
+    //                 depth_stencil_attachment: None,
+    //             });
+    //
+    //             // mutate the render_pass according to the program
+    //             programs[tex_rend.program_id.unwrap().clone()].render(
+    //                 tex_rend,
+    //                 self,
+    //                 &mut render_pass,
+    //             );
+    //         }
+    //     }
+    //
+    //     self.queue.submit(std::iter::once(encoder.finish()));
+    //
+    //     // TODO: manage if the surface should be presented or not
+    //     surface_texture.present();
+    //
+    //     Ok(())
+    // }
 }

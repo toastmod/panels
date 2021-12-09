@@ -5,8 +5,7 @@ use crate::proxyevents::ProxyEvent;
 /// Defines the timing for when a function should be called next.
 pub enum Timing {
 
-    /// Call immediately at the surface framerate.
-    /// * If you wish to overuse the CPU, SpecificTime may be better.
+    /// Call immediately at the rate of input events or the Surface framerate.
     ASAP,
 
     /// Called at a certain framerate, in sync with the Surface framerate.
@@ -18,6 +17,22 @@ pub enum Timing {
 
     /// This will not call the function.
     Never,
+}
+
+impl Timing {
+    /// Tell the timer that this function was just called.
+    pub fn just_called(&mut self) {
+        match self {
+            Timing::ASAP => {}
+            Timing::Framerate { last_rendered_at, desired_framerate } => {
+                *last_rendered_at = Instant::now();
+            }
+            Timing::SpecificTime { last_rendered_at, desired_wait_time } => {
+                *last_rendered_at = Instant::now();
+            }
+            Timing::Never => {}
+        }
+    }
 }
 
 

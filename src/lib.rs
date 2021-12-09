@@ -21,8 +21,8 @@ pub mod renderobj;
 pub mod resourcebytes;
 pub mod texture;
 pub mod texturerenderer;
-mod bindgroupreg;
-mod transform2d;
+pub mod bindgroupreg;
+pub mod transform2d;
 pub mod util;
 pub mod timing;
 pub mod wgpustate;
@@ -34,6 +34,8 @@ mod programreg;
 mod proxyevents;
 pub mod appmgmt;
 mod schedule;
+// pub mod combos;
+// pub mod pipelines;
 
 use std::borrow::Borrow;
 use std::sync::{Arc, Condvar, Mutex};
@@ -167,6 +169,9 @@ fn redraw_if_ready(
                     state,
                     &mut render_pass,
                 );
+
+                tex_rend.drawf_status.just_called();
+
             } else {
                 // println!(" Not rendering!");
             }
@@ -206,27 +211,35 @@ pub fn start(mut conductor: Box<dyn AppConductor>) {
         vec![]
     );
 
+
+
     // it is assumed that programs and renderers will be populated here.
     conductor.init_app(&mut renderers, &mut state, &mut programs);
 
     let mut last_rendered = Instant::now();
     // now to define the event loop
     let mut skip_frame = false;
+
+
+    let mut match_ela = move |ela: EventLoopAction, skipf: &mut bool |{
+        match ela {
+            EventLoopAction::None => {}
+            EventLoopAction::SKIP_FRAME => {
+                *skipf = true;
+            }
+            EventLoopAction::REQUEST_CLOSE => {
+                println!("Closing application...");
+                proxy.send_event(ProxyEvent::CLOSE_REQUEST).unwrap_or(panic!("EventLoopProxy Error! Could not send Close Request!"));
+            }
+        }
+    };
+
     event_loop.run(move |event, _, control_flow|{
         match event {
 
             Event::WindowEvent { window_id, event } =>{
                 if window.id() == window.id() {
-                    match conductor.event_mgmt(&mut renderers, &mut state, &mut programs, event) {
-                        EventLoopAction::None => {}
-                        EventLoopAction::SKIP_FRAME => {
-                            skip_frame = true;
-                        }
-                        EventLoopAction::REQUEST_CLOSE => {
-                            println!("Closing application...");
-                            proxy.send_event(ProxyEvent::CLOSE_REQUEST).unwrap_or(panic!("EventLoopProxy Error! Could not send Close Request!"));
-                        }
-                    }
+                    match_ela(conductor.event_mgmt(&mut renderers, &mut state, &mut programs, event), &mut skip_frame);
                 }
             }
 
@@ -253,14 +266,13 @@ pub fn start(mut conductor: Box<dyn AppConductor>) {
                 // update
                 for renderer in &mut renderers {
                     if renderer.should_call_updatef() {
-                        let ela = programs[renderer.program_id.unwrap().clone()].update(renderer, &mut state);
+                        match_ela(programs[renderer.program_id.unwrap().clone()].update(renderer, &mut state), &mut skip_frame);
+                        renderer.updatef_status.just_called();
                     }
                 }
                 // TODO: Use a different EventLoop for Android and iOS
                 //  redraw_request is not supported properly on these platforms.
-                if !skip_frame{
-                    window.request_redraw();
-                }
+                window.request_redraw();
             }
 
             Event::RedrawRequested(_) => {

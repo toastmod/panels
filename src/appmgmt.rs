@@ -8,11 +8,18 @@ use crate::wgpustate::State;
 pub enum EventLoopAction {
     None,
 
-    /// Skips the next frame.
+    /// Skips the current event loop frame's `RedrawRequested` routine.
+    /// This may delay rendering for any program that is ready to draw.
     SKIP_FRAME,
+
+    // Render the program that called this action.
+    //TODO: RENDER_ME
+
+
 
     /// Request to close the application.
     REQUEST_CLOSE,
+
 
 }
 
@@ -31,12 +38,18 @@ pub trait AppConductor {
     /// Where you would initialize your programs and renderers, taking note of what program is at what location, etc.
     /// You can also set the initial EventLoop framerate with  `EventLoopAction::SET_FPS()`
     fn init_app(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook>>) -> EventLoopAction {
-        panic!("Empty Conductor!")
+        state.set_fps(None);
+        EventLoopAction::None
     }
 
     /// The flow of `WindowEvent` traffic to each program, and poitentially the flow of output `EventLoopAction`s.
     fn event_mgmt(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook>>, event: WindowEvent) -> EventLoopAction {
-        panic!("Empty Conductor!")
+        match event {
+            WindowEvent::CloseRequested => {
+                EventLoopAction::REQUEST_CLOSE
+            }
+            _ => EventLoopAction::None
+        }
     }
 
     /// A program has requested to close the whole program.

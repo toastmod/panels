@@ -24,7 +24,9 @@ pub struct TextureRenderer {
     pub name: String,
     pub texture: TextureIndex,
     pub clear_or_load: wgpu::LoadOp<wgpu::Color>,
-    pub this_object: RenderObject,
+
+    /// Misc storage for separate objects that can be accessed at rendertime.
+    pub my_objects: Vec<RenderObject>,
 
     // Other `TextureRenderer`s representing subprograms.
     // pub owned_elements: Vec<TextureRenderer>,
@@ -45,23 +47,19 @@ pub struct TextureRenderer {
 impl TextureRenderer {
     /// Creates a `TextureRenderer` that uses the given routine to draw elements.
     pub fn new(nametag: &str, program_id: Option<usize>, tex_index: TextureIndex) -> Self {
+
         // create texture
         // create uniforms
         // create bindgroup for both
 
-        let mut this_object = RenderObject {
-            position: Transform2D::new(0.0, 0.0, 0.0),
-            pipeline: 0,
-            bind_group: 0,
-            model: 0,
-            uniforms: vec![],
-        };
+        // by default the textured rect is added as a placeholder
+        let mut this_object = RenderObject::new_placeholder_rect();
 
         Self {
             name: String::from(nametag),
             texture: tex_index,
             clear_or_load: wgpu::LoadOp::Load,
-            this_object,
+            my_objects: vec![this_object],
             //owned_elements: vec![],
             program_id,
             // drawf,
@@ -70,6 +68,12 @@ impl TextureRenderer {
             updatef_status: Timing::Never,
             // inputf
         }
+    }
+
+    /// Adds a `RenderObject` to `my_objects` and returns it's index.
+    pub fn add_renderobj(&mut self, obj: RenderObject) -> usize {
+        self.my_objects.push(obj);
+        self.my_objects.len()-1
     }
 
     pub fn set_update_timing(&mut self, timing: Timing) {
@@ -87,10 +91,10 @@ impl TextureRenderer {
     }
 
 
-    pub fn set_render_timing(&mut self, timing: Timing) {
-        match timing {
+    pub fn set_render_timing(&mut self, state: &mut State, timing: Timing) {
+        match &timing {
             Timing::ASAP => {}
-            Timing::Framerate { .. } => {}
+            Timing::Framerate { last_rendered_at, desired_framerate } => {}
             Timing::SpecificTime { .. } => {
                 // spawn a timer thread
             }
