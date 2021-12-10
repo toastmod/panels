@@ -310,14 +310,14 @@ impl State {
 
     }
 
-    pub fn create_renderobj(&self, pipeline: &str, model: usize) -> RenderObject {
-        let p = self.pipeline_map.get().unwrap();
+    pub fn create_renderobj(&self, pipeline: &str, model: usize, bind_group: usize) -> RenderObject {
+        let p = self.pipeline_map.get(pipeline.into_string()).unwrap();
         let m = self.models[model];
 
         RenderObject{
             position: WorldPoint::new(0.0,0.0,0.0),
             pipeline: p.pipeline,
-            bind_group: 0,
+            bind_group,
             model,
             uniforms: vec![]
         }
