@@ -40,8 +40,14 @@ impl SurfaceManager {
 
 impl ProgramHook for SurfaceManager {
     fn init(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
-        renderer.set_update_timing(Timing::Never);
-        renderer.set_render_timing(state, Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 144.0 });
+        renderer.set_update_timing(Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 60.0 });
+        renderer.set_render_timing(state, Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 60.0 });
+        renderer.set_clear(panels::wgpu::LoadOp::Clear(panels::wgpu::Color{
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0
+        }))
     }
 
     fn hook_renderer(&mut self, renderer_id: usize) {
@@ -56,7 +62,7 @@ impl ProgramHook for SurfaceManager {
         match event {
             WindowEvent::CursorMoved { device_id, position, modifiers } => {
                 // println!("moving to [x: {}/{} | y: {}/{}]",position.x,state.size.width,position.y,state.size.height);
-                self.move_panel(state, 0usize, WorldPoint::from_mouse(&state.size, position)*WorldPoint::new(1.0,-1.0,1.0));
+                self.lastpos = WorldPoint::from_mouse(&state.size, position);
                 EventLoopAction::None
             }
             _ => EventLoopAction::None
@@ -64,6 +70,7 @@ impl ProgramHook for SurfaceManager {
     }
 
     fn update(&mut self, renderer: &mut TextureRenderer, state: &mut State) -> EventLoopAction {
+        self.move_panel(state, 0usize, self.lastpos*WorldPoint::new(1.0,-1.0,1.0));
         EventLoopAction::None
     }
 

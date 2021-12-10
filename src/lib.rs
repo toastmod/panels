@@ -35,7 +35,7 @@ mod proxyevents;
 pub mod appmgmt;
 mod schedule;
 // pub mod combos;
-// pub mod pipelines;
+pub mod pipelines;
 
 use std::borrow::Borrow;
 use std::sync::{Arc, Condvar, Mutex};
@@ -65,13 +65,13 @@ pub use bytemuck;
 /// Creates a paired program and renderer, and returns their IDs respectively.
 /// The pair is not organized into a struct, incase the uesr wants multiple programs aimed at a renderer or vice versa.
 /// Creating an object that keeps track of pairing is up to the user this way.
-pub fn create_program_and_renderer(nametag: &str, (state, renderers, programs): ApplicationMut, phook: Box<dyn ProgramHook>) -> (usize, usize) {
+pub fn create_program_and_renderer(nametag: &str, (state, renderers, programs): ApplicationMut, target_texture: TextureIndex,phook: Box<dyn ProgramHook>) -> (usize, usize) {
     // first we create a ProgramHook object
     // let mut phook = Box::new(Panel::new());
 
     // ... and create a corresponding TextureRenderer, attatched with the ProgramHook.
     // in this case we are creating a renderer/program for the main Surface.
-    let mut my_renderer = TextureRenderer::new(nametag,None, TextureIndex::Surface);
+    let mut my_renderer = TextureRenderer::new(nametag,None, target_texture);
 
     // get the new IDs for the program and renderer
     let program_id = programs.len();

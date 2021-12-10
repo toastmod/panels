@@ -17,6 +17,7 @@ use winit::{event::*, window::*};
 use crate::texture::Texture;
 // use crate::pipelines::Pipeline;
 use std::collections::HashMap;
+use crate::pipelines::Pipeline;
 
 /// The render function for the WGPU `State`, defined by the user and called in the EventLoop
 /// The `bool` parameter indicates a forced surface redraw request.
@@ -39,6 +40,8 @@ pub struct State {
 
     /// All textures stored in this state.
     pub textures: Vec<texture::Texture>,
+
+    pub pipeline_map: HashMap<String, Pipeline>,
 
     // /// A hashmap for labelling RenderPipelines
     // pub pipeline_map: HashMap<&str, usize>,
@@ -267,10 +270,35 @@ impl State {
             // pipeline_map: HashMap::new(),
             // bglayout_map: HashMap::new(),
             // bindgroup_map: HashMap::new(),
+            pipeline_map: HashMap::new(),
             loop_fps: None
         }
     }
 
+    pub fn get_pipeline(&self, name: &str) -> &Pipeline {
+        self.pipeline_map.get(&String::from(name)).unwrap()
+    }
+
+    // TODO: make separate add functions for BindGroupLayouts, BindGroups, etc.
+    /// Load a `wgpu::RenderPipeline` and `wgpu::BindGroupLayout` into `State` memory.
+    pub fn add_pipeline(&mut self, name: &str, buildf: fn(&State) -> (wgpu::RenderPipeline, wgpu::BindGroupLayout)) {
+
+        let (p,bgl) = buildf(&self);
+
+        let pid = self.render_pipelines.len();
+        self.render_pipelines.push(p);
+
+        let bglid = self.bindgroup_layouts.len();
+        self.bindgroup_layouts.push(bgl);
+
+        self.pipeline_map.insert(String::from(name), Pipeline{
+            pipeline: pid,
+            bindgrouplayout: bglid
+        });
+
+    }
+
+    /// Load a `Texture` into `State` memory.
     pub fn add_texture(&mut self, tex: Texture) -> usize {
         // self.bindgroup_layouts[0].
         let o = self.textures.len();
@@ -304,6 +332,7 @@ impl State {
     /// Set the Surface framerate.
     pub fn set_fps(&mut self, fps: Option<f64>) {
         self.loop_fps = fps;
+        // self.adjust_fps();
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {

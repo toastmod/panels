@@ -3,7 +3,7 @@
 use panels::appmgmt::{AppConductor, CloseReqResponse, EventLoopAction};
 use panels::event::WindowEvent;
 use panels::programhook::ProgramHook;
-use panels::texturerenderer::TextureRenderer;
+use panels::texturerenderer::{TextureIndex, TextureRenderer};
 use panels::wgpustate::State;
 
 use crate::panel::Panel;
@@ -19,7 +19,7 @@ impl AppConductor for PanelsApp {
     fn init_app(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook>>) -> EventLoopAction {
         // now we can add renderers and programs to our application
         // this renderer will render to the surface and render each panel
-        panels::create_program_and_renderer("manager", (state, renderers, programs), Box::new(SurfaceManager::new(vec![
+        panels::create_program_and_renderer("manager", (state, renderers, programs), TextureIndex::Surface, Box::new(SurfaceManager::new(vec![
             RenderObject::new_placeholder_rect()
         ])));
         state.set_fps(None);
