@@ -47,7 +47,8 @@ impl ProgramHook for SurfaceManager {
             g: 0.0,
             b: 0.0,
             a: 1.0
-        }))
+        }));
+
     }
 
     fn hook_renderer(&mut self, renderer_id: usize) {

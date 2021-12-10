@@ -18,6 +18,7 @@ use crate::texture::Texture;
 // use crate::pipelines::Pipeline;
 use std::collections::HashMap;
 use crate::pipelines::Pipeline;
+use crate::rect::WorldPoint;
 
 /// The render function for the WGPU `State`, defined by the user and called in the EventLoop
 /// The `bool` parameter indicates a forced surface redraw request.
@@ -279,6 +280,17 @@ impl State {
         self.pipeline_map.get(&String::from(name)).unwrap()
     }
 
+    pub fn create_bindgroup(&mut self, pipeline: &str, entries: Vec<wgpu::BindGroupLayoutEntry>) -> usize {
+        let p = &self.bindgroup_layouts[self.pipeline_map.get(pipeline.into_string()).unwrap().bindgrouplayout];
+        let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor{
+            label: None,
+            layout: p,
+            entries: entries.as_slice()
+        });
+        let bgid = self.bind_groups.len();
+        self.bind_groups.push(bg);
+    }
+
     // TODO: make separate add functions for BindGroupLayouts, BindGroups, etc.
     /// Load a `wgpu::RenderPipeline` and `wgpu::BindGroupLayout` into `State` memory.
     pub fn add_pipeline(&mut self, name: &str, buildf: fn(&State) -> (wgpu::RenderPipeline, wgpu::BindGroupLayout)) {
@@ -295,6 +307,20 @@ impl State {
             pipeline: pid,
             bindgrouplayout: bglid
         });
+
+    }
+
+    pub fn create_renderobj(&self, pipeline: &str, model: usize) -> RenderObject {
+        let p = self.pipeline_map.get().unwrap();
+        let m = self.models[model];
+
+        RenderObject{
+            position: WorldPoint::new(0.0,0.0,0.0),
+            pipeline: p.pipeline,
+            bind_group: 0,
+            model,
+            uniforms: vec![]
+        }
 
     }
 
