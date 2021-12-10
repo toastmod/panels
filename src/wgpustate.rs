@@ -21,7 +21,7 @@ use crate::pipelines::Pipeline;
 
 /// The render function for the WGPU `State`, defined by the user and called in the EventLoop
 /// The `bool` parameter indicates a forced surface redraw request.
-pub type StateRenderFunction = Fn(&mut State, bool) -> Result<(), wgpu::SurfaceError>;
+pub type StateRenderFunction = dyn Fn(&mut State, bool) -> Result<(), wgpu::SurfaceError>;
 
 pub struct State {
     // pub renderf: Box<StateRenderFunction>,
