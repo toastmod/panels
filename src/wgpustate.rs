@@ -280,8 +280,8 @@ impl State {
         self.pipeline_map.get(&String::from(name)).unwrap()
     }
 
-    pub fn create_bindgroup(&mut self, pipeline: &str, entries: Vec<wgpu::BindGroupLayoutEntry>) -> usize {
-        let p = &self.bindgroup_layouts[self.pipeline_map.get(pipeline.into_string()).unwrap().bindgrouplayout];
+    pub fn create_bindgroup(&mut self, pipeline: &str, entries: Vec<wgpu::BindGroupEntry>) -> usize {
+        let p = &self.bindgroup_layouts[self.pipeline_map.get(&pipeline.to_string()).unwrap().bindgrouplayout];
         let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor{
             label: None,
             layout: p,
@@ -289,6 +289,7 @@ impl State {
         });
         let bgid = self.bind_groups.len();
         self.bind_groups.push(bg);
+        bgid
     }
 
     // TODO: make separate add functions for BindGroupLayouts, BindGroups, etc.
@@ -311,8 +312,8 @@ impl State {
     }
 
     pub fn create_renderobj(&self, pipeline: &str, model: usize, bind_group: usize) -> RenderObject {
-        let p = self.pipeline_map.get(pipeline.into_string()).unwrap();
-        let m = self.models[model];
+        let p = self.pipeline_map.get(&pipeline.to_string()).unwrap();
+        let m = &self.models[model];
 
         RenderObject{
             position: WorldPoint::new(0.0,0.0,0.0),
