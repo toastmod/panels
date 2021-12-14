@@ -6,3 +6,13 @@ pub struct Model {
     pub offset_buffer: wgpu::Buffer,
     pub num_indices: u32
 }
+
+pub struct ModelBuilder;
+
+impl Model {
+    pub fn new() -> ModelBuilder {
+        ModelBuilder
+    }
+}
+
+//TODO: load obj wavefront and mtl files

@@ -16,7 +16,10 @@ pub struct PanelsApp {
 }
 
 impl AppConductor for PanelsApp {
-    fn init_app(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook>>) -> EventLoopAction {
+
+    type Message = ();
+
+    fn init_app(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook<Message = Self::Message>>>) -> EventLoopAction<Self::Message> {
         // now we can add renderers and programs to our application
         // this renderer will render to the surface and render each panel
         panels::create_program_and_renderer("manager", (state, renderers, programs), TextureIndex::Surface, Box::new(SurfaceManager::new(vec![
@@ -26,7 +29,7 @@ impl AppConductor for PanelsApp {
         EventLoopAction::None
     }
 
-    fn event_mgmt(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook>>, event: WindowEvent) -> EventLoopAction {
+    fn event_mgmt(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook<Message = Self::Message>>>, event: WindowEvent) -> EventLoopAction<Self::Message> {
         match event {
             WindowEvent::Resized(new_size) => {
                 state.resize(new_size);
@@ -50,7 +53,7 @@ impl AppConductor for PanelsApp {
         }
     }
 
-    fn on_close_request(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook>>) -> CloseReqResponse {
+    fn on_close_request(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook<Message = Self::Message>>>) -> CloseReqResponse {
         CloseReqResponse::ACCEPT
     }
 }

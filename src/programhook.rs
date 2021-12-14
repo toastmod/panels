@@ -7,6 +7,8 @@ use crate::wgpustate::State;
 /// A struct that represents an applet that can be rendered to a texture.
 pub trait ProgramHook {
 
+    type Message;
+
     /// Initialize the program,
     /// this is where you would set the inital `Timing` for the update and render functions.
     /// This will be called when it has been loaded into memory and hooked to a `TextureRenderer`.
@@ -26,13 +28,13 @@ pub trait ProgramHook {
 
     /// This is where the program can update it's data at a rate set by the `Timing` of the `CallStatus`.
     /// You can change the renderer hook, or do pretty much anything here.
-    fn update(&mut self, renderer: &mut TextureRenderer, state: &mut State) -> EventLoopAction {
+    fn update(&mut self, renderer: &mut TextureRenderer, state: &mut State) -> EventLoopAction<Self::Message> {
         EventLoopAction::None
     }
 
     /// The program recieves input from the `AppConductor`.
     /// You can change the renderer hook, or do pretty much anything here.
-    fn input(&mut self, renderer: &mut TextureRenderer, state: &mut State, event: &WindowEvent) -> EventLoopAction {
+    fn input(&mut self, renderer: &mut TextureRenderer, state: &mut State, event: &WindowEvent) -> EventLoopAction<Self::Message> {
         match event {
             WindowEvent::CloseRequested => EventLoopAction::REQUEST_CLOSE,
             _ => EventLoopAction::None
