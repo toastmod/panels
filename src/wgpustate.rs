@@ -273,7 +273,7 @@ impl State {
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: s.uniform_buffers[0].as_entire_binding(),
+                    resource: s.models[0].offset_buffer.as_entire_binding(),
                 },
             ]
         });
