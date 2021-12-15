@@ -139,7 +139,6 @@ impl State {
 
 
         // models setup
-        let mut models = vec![];
 
         // TODO: create obj or from_slice model loader
         let vertex_buffer = state.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -156,7 +155,7 @@ impl State {
 
         let num_indices = RECT_INDICES.len() as u32;
 
-        models.push(Model {
+        state.models.push(Model {
             vertex_buffer,
             index_buffer,
             index_format: wgpu::IndexFormat::Uint16,
@@ -258,8 +257,6 @@ impl State {
                 panel_bind_group_layout
             )
         });
-
-        let bge =
 
         state.create_bindgroup("default_textured", |s|{
             vec![
