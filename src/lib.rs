@@ -231,7 +231,9 @@ pub fn start<T:'static>(mut conductor: Box<dyn AppConductor<Message = T>>) {
                 println!("Closing application...");
                 proxy.send_event(ProxyEvent::CLOSE_REQUEST).unwrap_or(panic!("EventLoopProxy Error! Could not send Close Request!"));
             }
-            EventLoopAction::MSG(_) => {}
+            EventLoopAction::MSG(m) => {
+                conductor.on_message(&mut renderers, &mut state, &mut programs, m);
+            }
         }
     };
 

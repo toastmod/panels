@@ -53,7 +53,7 @@ impl AppConductor for PanelsApp {
         }
     }
 
-    fn on_message(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook<Message = Self::Message>>>) {
+    fn on_message(&mut self, renderers: &mut Vec<TextureRenderer>, state: &mut State, programs: &mut Vec<Box<dyn ProgramHook<Message = Self::Message>>>, msg: Self::Message) {
         ()
     }
 
