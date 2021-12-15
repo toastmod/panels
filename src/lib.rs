@@ -221,7 +221,7 @@ pub fn start<T:'static>(mut conductor: Box<dyn AppConductor<Message = T>>) {
     let mut skip_frame = false;
 
 
-    let mut match_ela = move |ela: EventLoopAction<T>, skipf: &mut bool |{
+    let mut match_ela = move |conductr: &mut Box<dyn AppConductor<Message = T>>, (state, renderers, programs): ApplicationMut<T>, ela: EventLoopAction<T>, skipf: &mut bool |{
         match ela {
             EventLoopAction::None => {}
             EventLoopAction::SKIP_FRAME => {
@@ -232,7 +232,7 @@ pub fn start<T:'static>(mut conductor: Box<dyn AppConductor<Message = T>>) {
                 proxy.send_event(ProxyEvent::CLOSE_REQUEST).unwrap_or(panic!("EventLoopProxy Error! Could not send Close Request!"));
             }
             EventLoopAction::MSG(m) => {
-                conductor.on_message(&mut renderers, &mut state, &mut programs, m);
+                conductr.on_message(renderers, state, programs, m);
             }
         }
     };
@@ -242,7 +242,8 @@ pub fn start<T:'static>(mut conductor: Box<dyn AppConductor<Message = T>>) {
 
             Event::WindowEvent { window_id, event } =>{
                 if window.id() == window.id() {
-                    match_ela(conductor.event_mgmt(&mut renderers, &mut state, &mut programs, event), &mut skip_frame);
+                    let e = conductor.event_mgmt(&mut renderers, &mut state, &mut programs, event);
+                    match_ela(&mut conductor, (&mut state, &mut renderers, &mut programs), e, &mut skip_frame);
                 }
             }
 
@@ -267,10 +268,14 @@ pub fn start<T:'static>(mut conductor: Box<dyn AppConductor<Message = T>>) {
 
             Event::MainEventsCleared => {
                 // update
-                for renderer in &mut renderers {
+                for i in 0..renderers.len() {
+                    let renderer = &mut renderers[i];
                     if renderer.should_call_updatef() {
-                        match_ela(programs[renderer.program_id.unwrap().clone()].update(renderer, &mut state), &mut skip_frame);
+                        let e = programs[renderer.program_id.unwrap().clone()].update(renderer, &mut state);
                         renderer.updatef_status.just_called();
+                        drop(renderer);
+                        match_ela(&mut conductor, (&mut state, &mut renderers, &mut programs), e, &mut skip_frame);
+
                     }
                 }
                 // TODO: Use a different EventLoop for Android and iOS
