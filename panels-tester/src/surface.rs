@@ -39,6 +39,9 @@ impl SurfaceManager {
 }
 
 impl ProgramHook for SurfaceManager {
+    
+    type Message = ();
+    
     fn init(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
         renderer.set_update_timing(Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 60.0 });
         renderer.set_render_timing(state, Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 60.0 });
@@ -59,7 +62,7 @@ impl ProgramHook for SurfaceManager {
         println!("Stopping Surface manager");
     }
 
-    fn input(&mut self, renderer: &mut TextureRenderer, state: &mut State, event: &WindowEvent) -> EventLoopAction {
+    fn input(&mut self, renderer: &mut TextureRenderer, state: &mut State, event: &WindowEvent) -> EventLoopAction<Self::Message> {
         match event {
             WindowEvent::CursorMoved { device_id, position, modifiers } => {
                 // println!("moving to [x: {}/{} | y: {}/{}]",position.x,state.size.width,position.y,state.size.height);
@@ -70,7 +73,7 @@ impl ProgramHook for SurfaceManager {
         }
     }
 
-    fn update(&mut self, renderer: &mut TextureRenderer, state: &mut State) -> EventLoopAction {
+    fn update(&mut self, renderer: &mut TextureRenderer, state: &mut State) -> EventLoopAction<Self::Message> {
         self.move_panel(state, 0usize, self.lastpos*WorldPoint::new(1.0,-1.0,1.0));
         EventLoopAction::None
     }

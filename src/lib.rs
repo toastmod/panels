@@ -65,7 +65,7 @@ pub use bytemuck;
 /// Creates a paired program and renderer, and returns their IDs respectively.
 /// The pair is not organized into a struct, incase the uesr wants multiple programs aimed at a renderer or vice versa.
 /// Creating an object that keeps track of pairing is up to the user this way.
-pub fn create_program_and_renderer(nametag: &str, (state, renderers, programs): ApplicationMut, target_texture: TextureIndex,phook: Box<dyn ProgramHook>) -> (usize, usize) {
+pub fn create_program_and_renderer<T>(nametag: &str, (state, renderers, programs): ApplicationMut<T>, target_texture: TextureIndex,phook: Box<dyn ProgramHook<Message = T>>) -> (usize, usize) {
     // first we create a ProgramHook object
     // let mut phook = Box::new(Panel::new());
 
@@ -91,10 +91,10 @@ pub fn create_program_and_renderer(nametag: &str, (state, renderers, programs): 
 }
 
 
-fn redraw_if_ready(
+fn redraw_if_ready<T>(
     renderers: &mut Vec<TextureRenderer>,
     state: &mut State,
-    programs: &mut Vec<Box<dyn ProgramHook>>,
+    programs: &mut Vec<Box<dyn ProgramHook<Message = T>>>,
 ) {
     let mut encoder: Option<wgpu::CommandEncoder> = None;
     let mut surface_texture: Option<wgpu::SurfaceTexture> = None;
@@ -198,14 +198,14 @@ fn redraw_if_ready(
 
 }
 
-pub fn start(mut conductor: Box<dyn AppConductor>) {
+pub fn start<T:'static>(mut conductor: Box<dyn AppConductor<Message = T>>) {
     env_logger::init();
     let event_loop: EventLoop<ProxyEvent> = EventLoop::with_user_event();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
     let mut proxy = Arc::new(event_loop.create_proxy());
 
     // A full application needs to start with it's WGPU State, it's TextureRenderers, and it's ProgramHooks
-    let (mut state, mut renderers, mut programs): RendererInit = (
+    let (mut state, mut renderers, mut programs): RendererInit<T> = (
         pollster::block_on(wgpustate::State::new(&window)),
         vec![],
         vec![]
@@ -221,7 +221,7 @@ pub fn start(mut conductor: Box<dyn AppConductor>) {
     let mut skip_frame = false;
 
 
-    let mut match_ela = move |ela: EventLoopAction, skipf: &mut bool |{
+    let mut match_ela = move |conductr: &mut Box<dyn AppConductor<Message = T>>, (state, renderers, programs): ApplicationMut<T>, ela: EventLoopAction<T>, skipf: &mut bool |{
         match ela {
             EventLoopAction::None => {}
             EventLoopAction::SKIP_FRAME => {
@@ -231,6 +231,9 @@ pub fn start(mut conductor: Box<dyn AppConductor>) {
                 println!("Closing application...");
                 proxy.send_event(ProxyEvent::CLOSE_REQUEST).unwrap_or(panic!("EventLoopProxy Error! Could not send Close Request!"));
             }
+            EventLoopAction::MSG(m) => {
+                conductr.on_message(renderers, state, programs, m);
+            }
         }
     };
 
@@ -239,7 +242,8 @@ pub fn start(mut conductor: Box<dyn AppConductor>) {
 
             Event::WindowEvent { window_id, event } =>{
                 if window.id() == window.id() {
-                    match_ela(conductor.event_mgmt(&mut renderers, &mut state, &mut programs, event), &mut skip_frame);
+                    let e = conductor.event_mgmt(&mut renderers, &mut state, &mut programs, event);
+                    match_ela(&mut conductor, (&mut state, &mut renderers, &mut programs), e, &mut skip_frame);
                 }
             }
 
@@ -264,10 +268,14 @@ pub fn start(mut conductor: Box<dyn AppConductor>) {
 
             Event::MainEventsCleared => {
                 // update
-                for renderer in &mut renderers {
+                for i in 0..renderers.len() {
+                    let renderer = &mut renderers[i];
                     if renderer.should_call_updatef() {
-                        match_ela(programs[renderer.program_id.unwrap().clone()].update(renderer, &mut state), &mut skip_frame);
+                        let e = programs[renderer.program_id.unwrap().clone()].update(renderer, &mut state);
                         renderer.updatef_status.just_called();
+                        drop(renderer);
+                        match_ela(&mut conductor, (&mut state, &mut renderers, &mut programs), e, &mut skip_frame);
+
                     }
                 }
                 // TODO: Use a different EventLoop for Android and iOS

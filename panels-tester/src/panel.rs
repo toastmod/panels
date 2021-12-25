@@ -39,6 +39,9 @@ impl Panel {
 }
 
 impl ProgramHook for Panel {
+    
+    type Message = ();
+    
     fn init(&mut self, renderer: &mut TextureRenderer, state: &mut State) {
         renderer.set_update_timing(Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 30f64 });
         renderer.set_render_timing(state, Timing::Framerate { last_rendered_at: Instant::now(), desired_framerate: 30f64 });
@@ -70,7 +73,7 @@ impl ProgramHook for Panel {
 
     }
 
-    fn update(&mut self, renderer: &mut TextureRenderer, _state: &mut State) -> EventLoopAction {
+    fn update(&mut self, renderer: &mut TextureRenderer, _state: &mut State) -> EventLoopAction<Self::Message> {
         // let obj = &renderer.my_objects[0];
         // _state.queue.write_buffer(
         //     &_state.models[obj.model].offset_buffer,
@@ -80,7 +83,7 @@ impl ProgramHook for Panel {
         EventLoopAction::None
     }
 
-    fn input(&mut self, renderer: &mut TextureRenderer, _state: &mut State, event: &WindowEvent) -> EventLoopAction {
+    fn input(&mut self, renderer: &mut TextureRenderer, _state: &mut State, event: &WindowEvent) -> EventLoopAction<Self::Message> {
         EventLoopAction::None
     }
 

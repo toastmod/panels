@@ -106,8 +106,30 @@ impl State {
 
         surface.configure(&device, &config);
 
-        // texture setup
-        let diffuse_texture = texture::Texture::from_bytes(&device, &queue, diffuse_bytes).unwrap();
+        let mut state = Self {
+            // renderf,
+            surface,
+            device,
+            queue,
+            config,
+            size,
+            render_pipelines: vec![],
+            // pipeline_map: HashMap::new(),
+            models: vec![],
+            uniform_buffers: vec![],
+            bindgroup_layouts: vec![],
+            bind_groups: vec![],
+            textures: vec![],
+            // texture_renderers: vec![],
+            // objects: vec![],
+            // pipeline_map: HashMap::new(),
+            // bglayout_map: HashMap::new(),
+            // bindgroup_map: HashMap::new(),
+            pipeline_map: HashMap::new(),
+            loop_fps: None
+        };
+
+        state.add_texture(texture::Texture::from_bytes(&state.device, &state.queue, diffuse_bytes).unwrap());
 
         // uniform buffer setup
 
@@ -115,15 +137,47 @@ impl State {
             pos: [0.0, 0.0, 0.0],
         };
 
-        let pos_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+
+        // models setup
+
+        // TODO: create obj or from_slice model loader
+        let vertex_buffer = state.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(&[pos_unif]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            contents: bytemuck::cast_slice(RECT_VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
         });
 
-        // 2D Panel Bindgroup setup
-        let panel_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let index_buffer = state.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(RECT_INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
+        let num_indices = RECT_INDICES.len() as u32;
+
+        state.models.push(Model {
+            vertex_buffer,
+            index_buffer,
+            index_format: wgpu::IndexFormat::Uint16,
+            offset_buffer: state.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(&[pos_unif]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }),
+            num_indices,
+        });
+
+        // state.uniform_buffers.push());
+
+        state.add_pipeline("default_textured", |s| {
+
+            // render pipeline setup
+            let shader = s.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+            });
+
+            let panel_bind_group_layout = s.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: None,
                 entries: &[
                     // texture
@@ -161,126 +215,76 @@ impl State {
                 ],
             });
 
-        let main_panel_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &panel_bind_group_layout,
-            entries: &[
+            let render_pipeline_layout =
+                s.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: None,
+                    bind_group_layouts: &[&panel_bind_group_layout],
+                    push_constant_ranges: &[],
+                });
+            (s.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: None,
+                layout: Some(&render_pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &shader,
+                    entry_point: "main",
+                    buffers: &[Vertex::desc()],
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &shader,
+                    entry_point: "main",
+                    targets: &[wgpu::ColorTargetState {
+                        format: s.config.format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    }],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: Some(wgpu::Face::Back),
+                    clamp_depth: false,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+            }),
+                panel_bind_group_layout
+            )
+        });
+
+        state.create_bindgroup("default_textured", |s|{
+            vec![
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
+                    resource: wgpu::BindingResource::TextureView(&s.textures[0].view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
+                    resource: wgpu::BindingResource::Sampler(&s.textures[0].sampler),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: pos_buffer.as_entire_binding(),
+                    resource: s.models[0].offset_buffer.as_entire_binding(),
                 },
-            ],
+            ]
         });
 
-        // render pipeline setup
-        let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-        });
+        state
 
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: None,
-                bind_group_layouts: &[&panel_bind_group_layout],
-                push_constant_ranges: &[],
-            });
-
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "main",
-                buffers: &[Vertex::desc()],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "main",
-                targets: &[wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                }],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                clamp_depth: false,
-                polygon_mode: wgpu::PolygonMode::Fill,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-        });
-
-        // models setup
-        let mut models = vec![];
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(RECT_VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(RECT_INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-        });
-
-        let num_indices = RECT_INDICES.len() as u32;
-        println!("Indicies: {}", num_indices);
-        models.push(Model {
-            vertex_buffer,
-            index_buffer,
-            index_format: wgpu::IndexFormat::Uint16,
-            offset_buffer: pos_buffer,
-            num_indices,
-        });
-
-        Self {
-            // renderf,
-            surface,
-            device,
-            queue,
-            config,
-            size,
-            render_pipelines: vec![render_pipeline],
-            // pipeline_map: HashMap::new(),
-            models,
-            uniform_buffers: vec![],
-            bindgroup_layouts: vec![panel_bind_group_layout],
-            bind_groups: vec![main_panel_bind_group],
-            textures: vec![diffuse_texture],
-            // texture_renderers: vec![],
-            // objects: vec![],
-            // pipeline_map: HashMap::new(),
-            // bglayout_map: HashMap::new(),
-            // bindgroup_map: HashMap::new(),
-            pipeline_map: HashMap::new(),
-            loop_fps: None
-        }
     }
 
     pub fn get_pipeline(&self, name: &str) -> &Pipeline {
         self.pipeline_map.get(&String::from(name)).unwrap()
     }
 
-    pub fn create_bindgroup(&mut self, pipeline: &str, entries: Vec<wgpu::BindGroupEntry>) -> usize {
+    pub fn create_bindgroup(&mut self, pipeline: &str, buildf: fn(&State) -> Vec<wgpu::BindGroupEntry>) -> usize {
+        let entries = buildf(&self);
         let p = &self.bindgroup_layouts[self.pipeline_map.get(&pipeline.to_string()).unwrap().bindgrouplayout];
         let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor{
             label: None,
