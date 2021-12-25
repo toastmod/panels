@@ -28,7 +28,7 @@ impl SurfaceManager {
         }
     }
 
-    pub fn move_panel(&self, state: &State, panel_id: usize, worldpoint: WorldPoint,) {
+    pub fn move_panel(&self, state: &State, panel_id: usize, worldpoint: WorldPoint) {
         let obj = &self.panel_renderobjs[panel_id];
         state.queue.write_buffer(
             &state.models[obj.model].offset_buffer,

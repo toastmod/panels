@@ -44,6 +44,8 @@ pub struct State {
 
     pub pipeline_map: HashMap<String, Pipeline>,
 
+    pub model_map: HashMap<String, usize>,
+
     // /// A hashmap for labelling RenderPipelines
     // pub pipeline_map: HashMap<&str, usize>,
     //
@@ -126,6 +128,7 @@ impl State {
             // bglayout_map: HashMap::new(),
             // bindgroup_map: HashMap::new(),
             pipeline_map: HashMap::new(),
+            model_map: HashMap::new(),
             loop_fps: None
         };
 
@@ -133,10 +136,7 @@ impl State {
 
         // uniform buffer setup
 
-        let pos_unif = Transform2D {
-            pos: [0.0, 0.0, 0.0],
-        };
-
+        let pos_unif = WorldPoint::new(0.0,0.0,0.0);
 
         // models setup
 
@@ -169,7 +169,7 @@ impl State {
 
         // state.uniform_buffers.push());
 
-        state.add_pipeline("default_textured", |s| {
+        state.add_pipeline("default::textured", |s| {
 
             // render pipeline setup
             let shader = s.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
@@ -282,6 +282,54 @@ impl State {
     pub fn get_pipeline(&self, name: &str) -> &Pipeline {
         self.pipeline_map.get(&String::from(name)).unwrap()
     }
+
+    /// Load a model with a data resource.
+    pub fn load_model<V>(&mut self, name: &str, verticies: &[V], indicies: &[u16]) {
+        unimplemented!()
+    }
+
+    /// Build a model by constructing Verticies and Indicies data for a buffer, and return the location of the model in the `models` vec in the `State` memory.
+    /// V: Vertex type, must be compatible with pipeline.
+    /// * Indicies should be in `u16`
+    /// * Non-dynamic, non-rebuildable
+    pub fn build_model<'a,V: bytemuck::Pod >(&mut self, name: &str, buildf: fn() -> (&'a [V],&'a [u16])) -> usize {
+
+        let (va, ia) = buildf();
+
+        let vb = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(va),
+            usage: wgpu::BufferUsages::VERTEX
+        });
+
+        let ib = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(ia),
+            usage: wgpu::BufferUsages::INDEX
+        });
+
+
+        let ob = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[WorldPoint::new(0.0,0.0,0.0)]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
+        });
+
+        let model_id = self.models.len();
+        self.models.push(Model{
+            vertex_buffer: vb,
+            index_buffer: ib,
+            index_format: wgpu::IndexFormat::Uint16,
+            offset_buffer: ob,
+            num_indices: 0
+        });
+
+        self.model_map.insert(String::from(name), model_id);
+
+        model_id
+    }
+
+
 
     pub fn create_bindgroup(&mut self, pipeline: &str, buildf: fn(&State) -> Vec<wgpu::BindGroupEntry>) -> usize {
         let entries = buildf(&self);
