@@ -43,8 +43,8 @@ pub struct State {
     pub textures: Vec<texture::Texture>,
 
     pub pipeline_map: HashMap<String, Pipeline>,
-
     pub model_map: HashMap<String, usize>,
+    pub bindgroup_map: HashMap<String, usize>,
 
     // /// A hashmap for labelling RenderPipelines
     // pub pipeline_map: HashMap<&str, usize>,
@@ -129,6 +129,7 @@ impl State {
             // bindgroup_map: HashMap::new(),
             pipeline_map: HashMap::new(),
             model_map: HashMap::new(),
+            bindgroup_map: HashMap::new(),
             loop_fps: None
         };
 
@@ -155,6 +156,8 @@ impl State {
 
         let num_indices = RECT_INDICES.len() as u32;
 
+        let modelid = state.models.len();
+
         state.models.push(Model {
             vertex_buffer,
             index_buffer,
@@ -167,9 +170,11 @@ impl State {
             num_indices,
         });
 
+        state.model_map.insert(String::from("default:model:rect"), modelid);
+
         // state.uniform_buffers.push());
 
-        state.add_pipeline("default::textured", |s| {
+        state.add_pipeline("default:pipe:textured", |s| {
 
             // render pipeline setup
             let shader = s.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
@@ -289,7 +294,7 @@ impl State {
     }
 
     /// Build a model by constructing Verticies and Indicies data for a buffer, and return the location of the model in the `models` vec in the `State` memory.
-    /// V: Vertex type, must be compatible with pipeline.
+    /// * V: Vertex type, must be compatible with pipeline.
     /// * Indicies should be in `u16`
     /// * Non-dynamic, non-rebuildable
     pub fn build_model<'a,V: bytemuck::Pod >(&mut self, name: &str, buildf: fn() -> (&'a [V],&'a [u16])) -> usize {
